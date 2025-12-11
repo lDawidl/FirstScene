@@ -18,10 +18,40 @@ using namespace glm;
 C3dglProgram program;
 
 
+unsigned vertBuff;
+unsigned normBuff;
+unsigned indBuff;
+float vertices[] = {
+
+ 9, 8, -4,   18, 8, -4,   13, 1, 0,
+ 9, 8,  4,   18, 8,  4,   13, 1, 0,
+
+ 9, 8, -4,   9, 8,  4,   13, 1, 0,
+ 18, 8, -4,   18, 8,  4,  13, 1, 0,
+
+ 9, 8, -4,   9, 8,  4,   18, 8, -4,  18, 8, 4,
+
+  9, 8,  4,    18, 8, -4,    18, 8, 4
+};
+
+float normals[] = {
+	0, 4, -7, 0, 4, -7, 0, 4, -7,
+	0, 4,  7, 0, 4,  7, 0, 4,  7,
+   -7, 4,  0, -7, 4, 0, -7, 4, 0,
+	7, 4,  0,  7, 4, 0,  7, 4, 0,
+	0, -1, 0,  0, -1,0, 0,-1,0, 0,-1,0
+};
+
+unsigned indices[] = {
+
+0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 13, 14, 15 };
 
 // 3D models
 C3dglModel camera;
 C3dglModel table;
+C3dglModel chicken;
+C3dglModel vase;
+
 // The View Matrix
 mat4 matrixView;
 
@@ -73,15 +103,42 @@ bool init()
 	// setup lighting
 
 
-
 	glutSetVertexAttribCoord3(program.getAttribLocation("aVertex"));
 
 	glutSetVertexAttribNormal(program.getAttribLocation("aNormal"));
 
 
+	// prepare vertex data
+
+	glGenBuffers(1, &vertBuff);
+
+	glBindBuffer(GL_ARRAY_BUFFER, vertBuff);
+
+	glBufferData(GL_ARRAY_BUFFER, sizeof(vertices), vertices, GL_STATIC_DRAW);
+
+
+	// prepare normal data
+
+	glGenBuffers(1, &normBuff);
+
+	glBindBuffer(GL_ARRAY_BUFFER, normBuff);
+
+	glBufferData(GL_ARRAY_BUFFER, sizeof(normals), normals, GL_STATIC_DRAW);
+
+
+	// prepare indices array
+
+	glGenBuffers(1, &indBuff);
+
+	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, indBuff);
+
+	glBufferData(GL_ELEMENT_ARRAY_BUFFER, sizeof(indices), indices, GL_STATIC_DRAW);
+
 	// load your 3D models here!
 	if (!camera.load("models\\camera.3ds")) return false;
 	if (!table.load("models\\table.obj")) return false;
+	if (!chicken.load("models\\chicken.obj")) return false;
+	if (!vase.load("models\\vase.obj")) return false;
 
 	// Initialise the View Matrix (initial position of the camera)
 	matrixView = rotate(mat4(1), radians(12.f), vec3(1, 0, 0));
@@ -109,14 +166,7 @@ void renderScene(mat4& matrixView, float time, float deltaTime)
 	mat4 m;
 
 
-	// camera
-	m = matrixView;
-	m = translate(m, vec3(-3.0f, 0, 0.0f));
-	m = rotate(m, radians(180.f), vec3(0.0f, 1.0f, 0.0f));
-	m = scale(m, vec3(0.04f, 0.04f, 0.04f));
-	camera.render(m);
-
-	// setup materials - grey
+	// setup material - grey
 	program.sendUniform("material", vec3(0.6f, 0.6f, 0.6f));
 	
 
@@ -132,44 +182,154 @@ void renderScene(mat4& matrixView, float time, float deltaTime)
 	table.render(0, m); //renders the wood peice of the chair
 	table.render(1, m); //renders the cushion/pillow
 
+
+	//chair 2
+	m = matrixView;
+	m = translate(m, vec3(-10.0f, 0, 0.0f));
+	m = rotate(m, radians(0.f), vec3(0.0f, 1.0f, 0.0f));
+	m = scale(m, vec3(0.008f, 0.008f, 0.008f));
+
+
+	table.render(0, m);
+
+	table.render(1, m);
+
+	//chair 3
+	m = matrixView;
+	m = translate(m, vec3(-8.0f, 0, 0.0f));
+	m = rotate(m, radians(90.f), vec3(0.0f, 1.0f, 0.0f));
+	m = scale(m, vec3(0.008f, 0.008f, 0.008f));
+
+
+	table.render(0, m);
+
+	table.render(1, m);
+
+	//chair 4
+	m = matrixView;
+	m = translate(m, vec3(-12.0f, 0, 0.0f));
+	m = rotate(m, radians(270.f), vec3(0.0f, 1.0f, 0.0f));
+	m = scale(m, vec3(0.008f, 0.008f, 0.008f));
+
+
+	table.render(0, m);
+
+	table.render(1, m);
+
+
+
 	program.sendUniform("material", vec3(0.5f, 0.32f, 0.16f)); //brown colour 
 
 
-	mat4 table2;
+	//table
 
-	table2 = matrixView;
-	table2 = translate(table2, vec3(-10.0f, 0, 0.0f));
-	table2 = rotate(table2, radians(180.f), vec3(0.0f, 1.0f, 0.0f));
-	table2 = scale(table2, vec3(0.008f, 0.008f, 0.008f));
+	m = matrixView;
+	m = translate(m, vec3(-10.0f, 0, 0.0f));
+	m = rotate(m, radians(180.f), vec3(0.0f, 1.0f, 0.0f));
+	m = scale(m, vec3(0.008f, 0.008f, 0.008f));
 
 
-	table.render(2, table2);
+	table.render(2, m);
 
-	//chair 2
-	mat4 chair1;
 
-	chair1 = matrixView;
-	chair1 = translate(chair1, vec3(-10.0f, 0, 0.0f));
-	chair1 = rotate(chair1, radians(0.f), vec3(0.0f, 1.0f, 0.0f));
-	chair1 = scale(chair1, vec3(0.008f, 0.008f, 0.008f));
+
+	program.sendUniform("material", vec3(0.0f, 0.0f, 0.9f)); //blue colour 
+
+	//vase
+
+	m = matrixView;
+	m = translate(m, vec3(-10.0f, 6, 0.0f));
+	m = rotate(m, radians(180.f), vec3(0.0f, 1.0f, 0.0f));
+	m = scale(m, vec3(0.2f, 0.2f, 0.2f));
+
+
+	vase.render(m);
+
+
+
+	//upsidedown pyramid
+
+	program.sendUniform("material", vec3(0.9f, 0.0f, 0.0f)); //red colour 
+	
 
 	
-	table.render(0, chair1);
+	GLuint attribVertex = program.getAttribLocation("aVertex");
+
+	GLuint attribNormal = program.getAttribLocation("aNormal");
+	m = translate(m, vec3(13, 1, 0));  //make an origin point near the pyramid
+	m = rotate(m, 1.5f * time, vec3(0, 1, 0)); // rotate
+	m = translate(m, vec3(-13, -1, 0)); 
+	// return it back to origin, you do this to elimate the pyramid from spinning around the point 13,1,0 and instead spin in place,
+	// origin * (-origin) * rotation = rotation, only 
 	
-	table.render(1, chair1);
+	program.sendUniform("matrixModelView", m); //send data to GPU
+
+
+	// Enable vertex attribute arrays
+
+	glEnableVertexAttribArray(attribVertex);
+
+	glEnableVertexAttribArray(attribNormal);
+
+
+	// Bind (activate) the vertex buffer and set the pointer to it
+
+	glBindBuffer(GL_ARRAY_BUFFER, vertBuff);
+
+	glVertexAttribPointer(attribVertex, 3, GL_FLOAT, GL_FALSE, 0, 0);
+
+
+	// Bind (activate) the normal buffer and set the pointer to it
+
+	glBindBuffer(GL_ARRAY_BUFFER, normBuff);
+
+	glVertexAttribPointer(attribNormal, 3, GL_FLOAT, GL_FALSE, 0, 0);
+
+
+	// Draw triangles – using index buffer
+
+	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, indBuff);
+
+	glDrawElements(GL_TRIANGLES, 18, GL_UNSIGNED_INT, 0);
+
+
+	
+
+	// Disable arrays
+
+	glDisableVertexAttribArray(attribVertex);
+
+	glDisableVertexAttribArray(attribNormal);
+
+
+	//yellow colour
+	program.sendUniform("material", vec3(0.9f, 0.9f, 0.0f));
+
+	
+	//chicken
+
+	m = matrixView;
+	m = translate(m, vec3(-12.5f, 8.6, 0.1f));
+	m = rotate(m, radians(100.f), vec3(0.0f, 1.0f, 0.0f));
+	m = rotate(m, 1.5f * time, vec3(0, 1, 0));
+	m = scale(m, vec3(0.04f, 0.04f, 0.04f));
+
+
+	chicken.render(m);
 
 
 
 
 
 
-	// setup materials - blue
+	// setup material - green
 
-	program.sendUniform("material", vec3(0.2f, 0.2f, 0.8f));
+	program.sendUniform("material", vec3(0.0f, 0.9f, 0.0f));
 	// teapot
 	m = matrixView;
-	m = translate(m, vec3(15.0f, 0, 0.0f));
-	m = rotate(m, radians(120.f), vec3(0.0f, 1.0f, 0.0f));
+	m = translate(m, vec3(-7.0f, 6.7, 0.0f));
+	m = rotate(m, radians(0.f), vec3(0.0f, 1.0f, 0.0f));
+	m = scale(m, vec3(0.4f, 0.4f, 0.4f));
 	// the GLUT objects require the Model View Matrix setup
 	program.sendUniform("matrixModelView", m);
 	glutSolidTeapot(2.0);
@@ -194,7 +354,7 @@ void onRender()
 		_vel * deltaTime),		// animate camera motion (controlled by WASD keys)
 		-pitch, vec3(1, 0, 0))	// switch the pitch on
 		* matrixView;
-
+	
 	// render the scene objects
 	renderScene(matrixView, time, deltaTime);
 
