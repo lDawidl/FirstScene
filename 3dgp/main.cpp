@@ -52,6 +52,8 @@ C3dglModel table;
 C3dglModel chicken;
 C3dglModel vase;
 
+GLuint idTexWood;
+GLuint idTexNone;
 // The View Matrix
 mat4 matrixView;
 
@@ -61,14 +63,47 @@ float accel = 2.f;		// camera acceleration
 vec3 _acc(0), _vel(0);	// camera acceleration and velocity vectors
 float _fov = 60.f;		// field of view (zoom)
 
+
+
+
 bool init()
 {
-	// Initialise Shaders
+	
+	// Send the texture info to the shaders
 
+	program.sendUniform("texture0", 0);
+	
+	// Initialise Shaders
 	C3dglShader vertexShader;
 
 	C3dglShader fragmentShader;
+	
+	C3dglBitmap bm;
+	
+	glGenTextures(1, &idTexNone);
 
+	glBindTexture(GL_TEXTURE_2D, idTexNone);
+
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+
+	BYTE bytes[] = { 255, 255, 255 };
+
+	glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, 1, 1, 0, GL_BGR, GL_UNSIGNED_BYTE, &bytes);
+
+	bm.load("models/oak.bmp", GL_RGBA);
+	
+	glActiveTexture(GL_TEXTURE0);
+
+	glGenTextures(1, &idTexWood);
+
+	//glBindTexture(GL_TEXTURE_2D, idTexWood);
+
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+
+	glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, bm.getWidth(), bm.getHeight(), 0, GL_RGBA, GL_UNSIGNED_BYTE, bm.getBits());
+
+	
+	if (!bm.getBits()) return false;
 
 	if (!vertexShader.create(GL_VERTEX_SHADER)) return false;
 
@@ -163,11 +198,75 @@ bool init()
 
 void renderScene(mat4& matrixView, float time, float deltaTime)
 {
+
 	mat4 m;
+
+	//light
+	//program.sendUniform("lightAmbient.color", vec3(0.1, 0.1, 0.1));
+
+	//program.sendUniform("materialAmbient", vec3(1.0, 1.0, 1.0));
+
+	//program.sendUniform("lightDir.direction", vec3(1.0, 0.5, 1.0));
+
+	//program.sendUniform("lightDir.diffuse", vec3(0.2, 0.2, 0.2));
+
+	//program.sendUniform("materialDiffuse", vec3(0.2, 0.2, 0.6));
+
+	//program.sendUniform("lightDir.diffuse", vec3(0.0, 0.0, 0.0));
+
+	//point light 1
+	program.sendUniform("lightPoint1.position", vec3(-9.95f, 13.24f, -1.0f));
+
+	program.sendUniform("lightPoint1.diffuse", vec3(0.5, 0.5, 0.5));
+
+	program.sendUniform("lightPoint1.specular", vec3(1.0, 1.0, 1.0));
+
+	//point light 2
+	program.sendUniform("lightPoint2.position", vec3(-7.95f, 11.24f, 5.0f));
+
+	program.sendUniform("lightPoint2.diffuse", vec3(0.5, 0.5, 0.5));
+
+	program.sendUniform("lightPoint2.specular", vec3(1.0, 1.0, 1.0));
+
+	program.sendUniform("materialSpecular", vec3(0.6, 0.6, 1.0));
+
+	program.sendUniform("shininess", 10.0f);
+
+	program.sendUniform("tex", false);
+	program.sendUniform("materialAmbient", vec3(1.0f, 1.0f, 1.0f));
+	program.sendUniform("materialDiffuse", vec3(1.0f, 1.0f, 1.0f));
+	program.sendUniform("materialSpecular", vec3(1.0f, 1.0f, 1.0f));
+
+	//sphere one
+	m = matrixView;
+
+	m = translate(m, vec3(-9.95f, 13.24f, -1.0f));
+
+	m = scale(m, vec3(0.5f, 0.5f, 0.5f));
+
+	program.sendUniform("matrixModelView", m);
+
+	
+	glutSolidSphere(1, 32, 32);
+
+	//sphere two
+	m = matrixView;
+
+	m = translate(m, vec3(-7.95f, 6.24f, 5.0f));
+
+	m = scale(m, vec3(0.5f, 0.5f, 0.5f));
+
+	program.sendUniform("matrixModelView", m);
+
+
+	glutSolidSphere(1, 32, 32);
 
 
 	// setup material - grey
-	program.sendUniform("material", vec3(0.6f, 0.6f, 0.6f));
+	program.sendUniform("materialAmbient", vec3(0.6f, 0.6f, 0.6f));
+	program.sendUniform("materialDiffuse", vec3(0.6f, 0.6f, 0.6f));
+	program.sendUniform("materialSpecular", vec3(0.6f, 0.6f, 0.6f));
+	
 	
 
 	//chair 1
@@ -218,9 +317,10 @@ void renderScene(mat4& matrixView, float time, float deltaTime)
 
 
 
-	program.sendUniform("material", vec3(0.5f, 0.32f, 0.16f)); //brown colour 
+	program.sendUniform("tex", true);
 
-
+	
+	
 	//table
 
 	m = matrixView;
@@ -228,13 +328,16 @@ void renderScene(mat4& matrixView, float time, float deltaTime)
 	m = rotate(m, radians(180.f), vec3(0.0f, 1.0f, 0.0f));
 	m = scale(m, vec3(0.008f, 0.008f, 0.008f));
 
-
+	
 	table.render(2, m);
 
+	program.sendUniform("tex", false);
 
 
-	program.sendUniform("material", vec3(0.0f, 0.0f, 0.9f)); //blue colour 
-
+	
+	program.sendUniform("materialAmbient", vec3(0.0f, 0.0f, 0.9f));
+	program.sendUniform("materialDiffuse", vec3(0.0f, 0.0f, 0.9f));
+	program.sendUniform("materialSpecular", vec3(0.0f, 0.0f, 0.9f));
 	//vase
 
 	m = matrixView;
@@ -245,12 +348,16 @@ void renderScene(mat4& matrixView, float time, float deltaTime)
 
 	vase.render(m);
 
-
+	
 
 	//upsidedown pyramid
 
-	program.sendUniform("material", vec3(0.9f, 0.0f, 0.0f)); //red colour 
-	
+
+	program.sendUniform("materialAmbient", vec3(0.9f, 0.0f, 0.0f));
+	program.sendUniform("materialDiffuse", vec3(0.9f, 0.0f, 0.0f));
+	program.sendUniform("materialSpecular", vec3(0.9f, 0.0f, 0.0f));
+
+
 
 	
 	GLuint attribVertex = program.getAttribLocation("aVertex");
@@ -293,7 +400,6 @@ void renderScene(mat4& matrixView, float time, float deltaTime)
 	glDrawElements(GL_TRIANGLES, 18, GL_UNSIGNED_INT, 0);
 
 
-	
 
 	// Disable arrays
 
@@ -303,8 +409,11 @@ void renderScene(mat4& matrixView, float time, float deltaTime)
 
 
 	//yellow colour
-	program.sendUniform("material", vec3(0.9f, 0.9f, 0.0f));
 
+
+	program.sendUniform("materialAmbient", vec3(0.9f, 0.9f, 0.0f));
+	program.sendUniform("materialDiffuse", vec3(0.9f, 0.9f, 0.0f));
+	program.sendUniform("materialSpecular", vec3(0.9f, 0.9f, 0.0f));
 	
 	//chicken
 
@@ -317,14 +426,14 @@ void renderScene(mat4& matrixView, float time, float deltaTime)
 
 	chicken.render(m);
 
-
-
-
-
-
 	// setup material - green
 
-	program.sendUniform("material", vec3(0.0f, 0.9f, 0.0f));
+
+
+	program.sendUniform("materialAmbient", vec3(0.0f, 0.9f, 0.0f));
+	program.sendUniform("materialDiffuse", vec3(0.0f, 0.9f, 0.0f));
+	program.sendUniform("materialSpecular", vec3(0.0f, 0.9f, 0.0f));
+
 	// teapot
 	m = matrixView;
 	m = translate(m, vec3(-7.0f, 6.7, 0.0f));
@@ -333,6 +442,13 @@ void renderScene(mat4& matrixView, float time, float deltaTime)
 	// the GLUT objects require the Model View Matrix setup
 	program.sendUniform("matrixModelView", m);
 	glutSolidTeapot(2.0);
+
+
+
+	
+	
+	
+
 }
 
 void onRender()
@@ -354,6 +470,8 @@ void onRender()
 		_vel * deltaTime),		// animate camera motion (controlled by WASD keys)
 		-pitch, vec3(1, 0, 0))	// switch the pitch on
 		* matrixView;
+	
+	program.sendUniform("matrixView", matrixView);
 	
 	// render the scene objects
 	renderScene(matrixView, time, deltaTime);
