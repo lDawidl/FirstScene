@@ -40,6 +40,9 @@ vec3 color;
 };
 
 uniform AMBIENT lightAmbient;
+
+uniform vec3 emissive;
+
 vec4 AmbientLight(AMBIENT light)
 
 {
@@ -101,6 +104,7 @@ normal = normalize(mat3(matrixModelView) * aNormal);
 color = vec4(0, 0, 0, 1);
 
 color += AmbientLight(lightAmbient);
+color += vec4(materialAmbient * emissive, 1.0);
 color += DirectionalLight(lightDir);
 
 

@@ -51,9 +51,12 @@ C3dglModel camera;
 C3dglModel table;
 C3dglModel chicken;
 C3dglModel vase;
+C3dglModel lamp;
 
 GLuint idTexWood;
 GLuint idTexNone;
+GLuint clo;
+
 // The View Matrix
 mat4 matrixView;
 
@@ -79,7 +82,9 @@ bool init()
 	C3dglShader fragmentShader;
 	
 	C3dglBitmap bm;
+	C3dglBitmap mm;
 	
+	//blank
 	glGenTextures(1, &idTexNone);
 
 	glBindTexture(GL_TEXTURE_2D, idTexNone);
@@ -90,13 +95,15 @@ bool init()
 
 	glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, 1, 1, 0, GL_BGR, GL_UNSIGNED_BYTE, &bytes);
 
+	//oak
 	bm.load("models/oak.bmp", GL_RGBA);
+	
 	
 	glActiveTexture(GL_TEXTURE0);
 
 	glGenTextures(1, &idTexWood);
 
-	//glBindTexture(GL_TEXTURE_2D, idTexWood);
+	glBindTexture(GL_TEXTURE_2D, idTexWood);
 
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
 
@@ -104,6 +111,20 @@ bool init()
 
 	
 	if (!bm.getBits()) return false;
+
+	//cloth
+	mm.load("models/cloth.bmp", GL_RGBA);
+	glActiveTexture(GL_TEXTURE0);
+
+	glGenTextures(1, &clo);
+
+	glBindTexture(GL_TEXTURE_2D, clo);
+
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+
+	glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, mm.getWidth(), mm.getHeight(), 0, GL_RGBA, GL_UNSIGNED_BYTE, mm.getBits());
+	
+	if (!mm.getBits()) return false;
 
 	if (!vertexShader.create(GL_VERTEX_SHADER)) return false;
 
@@ -174,6 +195,7 @@ bool init()
 	if (!table.load("models\\table.obj")) return false;
 	if (!chicken.load("models\\chicken.obj")) return false;
 	if (!vase.load("models\\vase.obj")) return false;
+	if (!lamp .load("models\\lamp.obj")) return false;
 
 	// Initialise the View Matrix (initial position of the camera)
 	matrixView = rotate(mat4(1), radians(12.f), vec3(1, 0, 0));
@@ -202,27 +224,27 @@ void renderScene(mat4& matrixView, float time, float deltaTime)
 	mat4 m;
 
 	//light
-	//program.sendUniform("lightAmbient.color", vec3(0.1, 0.1, 0.1));
+	program.sendUniform("lightAmbient.color", vec3(0.1, 0.1, 0.1));
 
-	//program.sendUniform("materialAmbient", vec3(1.0, 1.0, 1.0));
+	program.sendUniform("materialAmbient", vec3(1.0, 1.0, 1.0));
 
 	//program.sendUniform("lightDir.direction", vec3(1.0, 0.5, 1.0));
 
 	//program.sendUniform("lightDir.diffuse", vec3(0.2, 0.2, 0.2));
 
-	//program.sendUniform("materialDiffuse", vec3(0.2, 0.2, 0.6));
+	program.sendUniform("materialDiffuse", vec3(0.2, 0.2, 0.6));
 
 	//program.sendUniform("lightDir.diffuse", vec3(0.0, 0.0, 0.0));
 
 	//point light 1
-	program.sendUniform("lightPoint1.position", vec3(-9.95f, 13.24f, -1.0f));
+	program.sendUniform("lightPoint1.position", vec3(-15.93, 8, -2.1f));
 
 	program.sendUniform("lightPoint1.diffuse", vec3(0.5, 0.5, 0.5));
 
 	program.sendUniform("lightPoint1.specular", vec3(1.0, 1.0, 1.0));
 
 	//point light 2
-	program.sendUniform("lightPoint2.position", vec3(-7.95f, 11.24f, 5.0f));
+	program.sendUniform("lightPoint2.position", vec3(-7.43, 8.5, 2.1f));
 
 	program.sendUniform("lightPoint2.diffuse", vec3(0.5, 0.5, 0.5));
 
@@ -232,42 +254,19 @@ void renderScene(mat4& matrixView, float time, float deltaTime)
 
 	program.sendUniform("shininess", 10.0f);
 
-	program.sendUniform("tex", false);
-	program.sendUniform("materialAmbient", vec3(1.0f, 1.0f, 1.0f));
-	program.sendUniform("materialDiffuse", vec3(1.0f, 1.0f, 1.0f));
-	program.sendUniform("materialSpecular", vec3(1.0f, 1.0f, 1.0f));
-
-	//sphere one
-	m = matrixView;
-
-	m = translate(m, vec3(-9.95f, 13.24f, -1.0f));
-
-	m = scale(m, vec3(0.5f, 0.5f, 0.5f));
-
-	program.sendUniform("matrixModelView", m);
-
-	
-	glutSolidSphere(1, 32, 32);
-
-	//sphere two
-	m = matrixView;
-
-	m = translate(m, vec3(-7.95f, 6.24f, 5.0f));
-
-	m = scale(m, vec3(0.5f, 0.5f, 0.5f));
-
-	program.sendUniform("matrixModelView", m);
+	program.sendUniform("tex", false); // use a false statement to get rid of texture(s) on objects that dont need it
 
 
-	glutSolidSphere(1, 32, 32);
 
 
-	// setup material - grey
+
+
+
+	// setup material - grey (in this case it now used more to colour/shade the texture(s) below)
 	program.sendUniform("materialAmbient", vec3(0.6f, 0.6f, 0.6f));
 	program.sendUniform("materialDiffuse", vec3(0.6f, 0.6f, 0.6f));
 	program.sendUniform("materialSpecular", vec3(0.6f, 0.6f, 0.6f));
-	
-	
+
 
 	//chair 1
 	
@@ -277,11 +276,15 @@ void renderScene(mat4& matrixView, float time, float deltaTime)
 	m = rotate(m, radians(180.f), vec3(0.0f, 1.0f, 0.0f));
 	m = scale(m, vec3(0.008f, 0.008f, 0.008f));
 
-
+	program.sendUniform("tex", true);
+	glBindTexture(GL_TEXTURE_2D, idTexWood); //turn texture on and specifiy which texture to use on object/piece
 	table.render(0, m); //renders the wood peice of the chair
+
+
+	 
+	glBindTexture(GL_TEXTURE_2D, clo); // specify texture once again to overwrite the wood texture above
 	table.render(1, m); //renders the cushion/pillow
-
-
+	
 	//chair 2
 	m = matrixView;
 	m = translate(m, vec3(-10.0f, 0, 0.0f));
@@ -289,9 +292,13 @@ void renderScene(mat4& matrixView, float time, float deltaTime)
 	m = scale(m, vec3(0.008f, 0.008f, 0.008f));
 
 
-	table.render(0, m);
+	glBindTexture(GL_TEXTURE_2D, idTexWood); //turn texture on and specifiy which texture to use on object/piece
+	table.render(0, m); //renders the wood peice of the chair
 
-	table.render(1, m);
+
+
+	glBindTexture(GL_TEXTURE_2D, clo); // specify texture once again to overwrite the wood texture above
+	table.render(1, m); //renders the cushion/pillow
 
 	//chair 3
 	m = matrixView;
@@ -299,10 +306,13 @@ void renderScene(mat4& matrixView, float time, float deltaTime)
 	m = rotate(m, radians(90.f), vec3(0.0f, 1.0f, 0.0f));
 	m = scale(m, vec3(0.008f, 0.008f, 0.008f));
 
+	glBindTexture(GL_TEXTURE_2D, idTexWood); 
+	table.render(0, m); 
 
-	table.render(0, m);
 
-	table.render(1, m);
+
+	glBindTexture(GL_TEXTURE_2D, clo);
+	table.render(1, m); 
 
 	//chair 4
 	m = matrixView;
@@ -311,17 +321,23 @@ void renderScene(mat4& matrixView, float time, float deltaTime)
 	m = scale(m, vec3(0.008f, 0.008f, 0.008f));
 
 
-	table.render(0, m);
-
-	table.render(1, m);
-
+	glBindTexture(GL_TEXTURE_2D, idTexWood); 
+	table.render(0, m); 
 
 
-	program.sendUniform("tex", true);
 
+	glBindTexture(GL_TEXTURE_2D, clo);
+	table.render(1, m); 
 	
+	program.sendUniform("tex", false); // turn off texture so it isn't applied to every object under
+
+
+
 	
 	//table
+
+	program.sendUniform("tex", true); // turn texture back on 
+	glBindTexture(GL_TEXTURE_2D, idTexWood); // specify texture
 
 	m = matrixView;
 	m = translate(m, vec3(-10.0f, 0, 0.0f));
@@ -331,7 +347,7 @@ void renderScene(mat4& matrixView, float time, float deltaTime)
 	
 	table.render(2, m);
 
-	program.sendUniform("tex", false);
+	program.sendUniform("tex", false); // turn off texture so it isn't applied to every object under
 
 
 	
@@ -366,7 +382,7 @@ void renderScene(mat4& matrixView, float time, float deltaTime)
 	m = translate(m, vec3(13, 1, 0));  //make an origin point near the pyramid
 	m = rotate(m, 1.5f * time, vec3(0, 1, 0)); // rotate
 	m = translate(m, vec3(-13, -1, 0)); 
-	// return it back to origin, you do this to elimate the pyramid from spinning around the point 13,1,0 and instead spin in place,
+	// return it back to origin, you do this to eliminate the pyramid from spinning around the point 13,1,0 and instead spin in place,
 	// origin * (-origin) * rotation = rotation, only 
 	
 	program.sendUniform("matrixModelView", m); //send data to GPU
@@ -426,9 +442,65 @@ void renderScene(mat4& matrixView, float time, float deltaTime)
 
 	chicken.render(m);
 
-	// setup material - green
+	// lamp
 
+	m = matrixView;
+	m = translate(m, vec3(-14.5f, 6.09, -2.1f));
+	m = scale(m, vec3(0.04f, 0.04f, 0.04f));
 
+	lamp.render(m);
+
+	program.sendUniform("materialAmbient", vec3(0.9f, 0.9f, 0.9f));
+	program.sendUniform("materialDiffuse", vec3(0.3f, 0.3f, 0.3f));
+	program.sendUniform("materialSpecular", vec3(0.9f, 0.9f, 0.9f));
+	
+	//sphere/bulb one
+	m = matrixView;
+
+	m = translate(m, vec3(-15.93, 8.5, -2.1f));
+
+	m = scale(m, vec3(0.17f, 0.17f, 0.17f));
+
+	program.sendUniform("matrixModelView", m);
+
+	program.sendUniform("emissive", vec3(1.0, 1.0, 1.0));
+	glutSolidSphere(1, 32, 32);
+	program.sendUniform("emissive", vec3(0.0, 0.0, 0.0));
+
+	
+	//yellow
+	program.sendUniform("materialAmbient", vec3(0.9f, 0.9f, 0.0f));
+	program.sendUniform("materialDiffuse", vec3(0.9f, 0.9f, 0.0f));
+	program.sendUniform("materialSpecular", vec3(0.9f, 0.9f, 0.0f));
+	// lamp 2
+
+	m = matrixView;
+	m = translate(m, vec3(-6, 6.09, 2.1f));
+	m = scale(m, vec3(0.04f, 0.04f, 0.04f));
+
+	lamp.render(m);
+
+	program.sendUniform("materialAmbient", vec3(0.9f, 0.9f, 0.9f));
+	program.sendUniform("materialDiffuse", vec3(0.3f, 0.3f, 0.3f));
+	program.sendUniform("materialSpecular", vec3(0.9f, 0.9f, 0.9f));
+
+	//sphere/bulb two
+	m = matrixView;
+
+	m = translate(m, vec3(-7.43, 8.5, 2.1f));
+
+	m = scale(m, vec3(0.17f, 0.17f, 0.17f));
+
+	program.sendUniform("matrixModelView", m);
+
+	program.sendUniform("emissive", vec3(1.0, 1.0, 1.0));
+	glutSolidSphere(1, 32, 32);
+	program.sendUniform("emissive", vec3(0.0, 0.0, 0.0));
+	
+	
+	
+	
+// setup material - green
 
 	program.sendUniform("materialAmbient", vec3(0.0f, 0.9f, 0.0f));
 	program.sendUniform("materialDiffuse", vec3(0.0f, 0.9f, 0.0f));

@@ -2,7 +2,7 @@
 
 #version 330
 
-uniform bool tex;
+uniform bool tex; // this will be used to freely turn textures on and off on objects in main
 
 in vec4 position;
 
