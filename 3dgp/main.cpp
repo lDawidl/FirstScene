@@ -16,8 +16,8 @@ using namespace glm;
 
 
 C3dglProgram program;
-
-
+bool liiii = true;
+bool liiii1 = true;
 unsigned vertBuff;
 unsigned normBuff;
 unsigned indBuff;
@@ -224,7 +224,7 @@ void renderScene(mat4& matrixView, float time, float deltaTime)
 	mat4 m;
 
 	//light
-	program.sendUniform("lightAmbient.color", vec3(0.1, 0.1, 0.1));
+	//program.sendUniform("lightAmbient.color", vec3(0.1, 0.1, 0.1));
 
 	program.sendUniform("materialAmbient", vec3(1.0, 1.0, 1.0));
 
@@ -237,19 +237,34 @@ void renderScene(mat4& matrixView, float time, float deltaTime)
 	//program.sendUniform("lightDir.diffuse", vec3(0.0, 0.0, 0.0));
 
 	//point light 1
+	
 	program.sendUniform("lightPoint1.position", vec3(-15.93, 8, -2.1f));
+	if (liiii) 
+	{
+		program.sendUniform("lightPoint1.diffuse", vec3(0.5, 0.5, 0.5));
 
-	program.sendUniform("lightPoint1.diffuse", vec3(0.5, 0.5, 0.5));
+		program.sendUniform("lightPoint1.specular", vec3(1.0, 1.0, 1.0));
+	}
+	else
+	{
+		program.sendUniform("lightPoint1.diffuse", vec3(0.0, 0.0, 0.0));
 
-	program.sendUniform("lightPoint1.specular", vec3(1.0, 1.0, 1.0));
-
+		program.sendUniform("lightPoint1.specular", vec3(0.0, 0.0, 0));
+	}
 	//point light 2
 	program.sendUniform("lightPoint2.position", vec3(-7.43, 8.5, 2.1f));
+	if (liiii1)
+	{
+		program.sendUniform("lightPoint2.diffuse", vec3(0.5, 0.5, 0.5));
 
-	program.sendUniform("lightPoint2.diffuse", vec3(0.5, 0.5, 0.5));
+		program.sendUniform("lightPoint2.specular", vec3(1.0, 1.0, 1.0));
+	}
+	else
+	{
+		program.sendUniform("lightPoint2.diffuse", vec3(0.0, 0.0, 0.0));
 
-	program.sendUniform("lightPoint2.specular", vec3(1.0, 1.0, 1.0));
-
+		program.sendUniform("lightPoint2.specular", vec3(0.0, 0.0, 0));
+	}
 	program.sendUniform("materialSpecular", vec3(0.6, 0.6, 1.0));
 
 	program.sendUniform("shininess", 10.0f);
@@ -515,7 +530,7 @@ void renderScene(mat4& matrixView, float time, float deltaTime)
 	program.sendUniform("matrixModelView", m);
 	glutSolidTeapot(2.0);
 
-
+	
 
 	
 	
@@ -577,7 +592,13 @@ void onKeyDown(unsigned char key, int x, int y)
 	case 'd': _acc.x = -accel; break;
 	case 'e': _acc.y = accel; break;
 	case 'q': _acc.y = -accel; break;
+	case 'k': liiii = !liiii; break;
+	case 'l': liiii1 = !liiii1; break;
+
 	}
+
+	
+
 }
 
 // Handle WASDQE keys (key up)
@@ -608,6 +629,7 @@ void onSpecDown(int key, int x, int y)
 	case GLUT_KEY_PAGE_UP:	onKeyDown('q', x, y); break;
 	case GLUT_KEY_PAGE_DOWN:onKeyDown('e', x, y); break;
 	case GLUT_KEY_F11:		glutFullScreenToggle();
+
 	}
 }
 
