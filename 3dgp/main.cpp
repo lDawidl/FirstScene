@@ -213,6 +213,8 @@ bool init()
 	cout << "  QE or PgUp/Dn to move the camera up and down" << endl;
 	cout << "  Shift to speed up your movement" << endl;
 	cout << "  Drag the mouse to look around" << endl;
+	cout << " Press K to turn off the lamp on the left" << endl;
+	cout << " Press L to turn off the lamp on the right" << endl;
 	cout << endl;
 
 	return true;
@@ -478,7 +480,15 @@ void renderScene(mat4& matrixView, float time, float deltaTime)
 
 	program.sendUniform("matrixModelView", m);
 
-	program.sendUniform("emissive", vec3(1.0, 1.0, 1.0));
+	if (liiii) 
+	{
+		program.sendUniform("emissive", vec3(1.0, 1.0, 1.0));
+	}
+	
+	else 
+	{ 
+		program.sendUniform("emissive", vec3(0.0, 0.0, 0.0)); 
+	}
 	glutSolidSphere(1, 32, 32);
 	program.sendUniform("emissive", vec3(0.0, 0.0, 0.0));
 
@@ -508,10 +518,18 @@ void renderScene(mat4& matrixView, float time, float deltaTime)
 
 	program.sendUniform("matrixModelView", m);
 
-	program.sendUniform("emissive", vec3(1.0, 1.0, 1.0));
+	if (liiii1)
+	{
+		program.sendUniform("emissive", vec3(1.0, 1.0, 1.0));
+	}
+
+	else
+	{
+		program.sendUniform("emissive", vec3(0.0, 0.0, 0.0));
+	}
+	
 	glutSolidSphere(1, 32, 32);
 	program.sendUniform("emissive", vec3(0.0, 0.0, 0.0));
-	
 	
 	
 	
