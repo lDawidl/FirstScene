@@ -57,6 +57,9 @@ GLuint idTexWood;
 GLuint idTexNone;
 GLuint clo;
 
+GLuint idTexCube;
+
+
 // The View Matrix
 mat4 matrixView;
 
@@ -83,6 +86,27 @@ bool init()
 	
 	C3dglBitmap bm;
 	C3dglBitmap mm;
+
+
+	// load Cube Map
+
+	glActiveTexture(GL_TEXTURE1);
+
+	glGenTextures(1, &idTexCube);
+
+	glBindTexture(GL_TEXTURE_CUBE_MAP, idTexCube);
+
+	glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+
+	glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+
+	glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+
+	glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+
+	glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_WRAP_R, GL_CLAMP_TO_EDGE);
+
+
 	
 	//blank
 	glGenTextures(1, &idTexNone);
@@ -196,6 +220,29 @@ bool init()
 	if (!chicken.load("models\\chicken.obj")) return false;
 	if (!vase.load("models\\vase.obj")) return false;
 	if (!lamp .load("models\\lamp.obj")) return false;
+	bm.load("models\\cube\\lt.png", GL_RGBA); glTexImage2D(GL_TEXTURE_CUBE_MAP_POSITIVE_X, 0,
+
+		GL_RGBA, bm.getWidth(), abs(bm.getHeight()), 0, GL_RGBA, GL_UNSIGNED_BYTE, bm.getBits());
+
+	bm.load("models\\cube\\rt.png", GL_RGBA); glTexImage2D(GL_TEXTURE_CUBE_MAP_NEGATIVE_X, 0,
+
+		GL_RGBA, bm.getWidth(), abs(bm.getHeight()), 0, GL_RGBA, GL_UNSIGNED_BYTE, bm.getBits());
+
+	bm.load("models\\cube\\dn.png", GL_RGBA); glTexImage2D(GL_TEXTURE_CUBE_MAP_POSITIVE_Y, 0,
+
+		GL_RGBA, bm.getWidth(), abs(bm.getHeight()), 0, GL_RGBA, GL_UNSIGNED_BYTE, bm.getBits());
+
+	bm.load("models\\cube\\up.png", GL_RGBA); glTexImage2D(GL_TEXTURE_CUBE_MAP_NEGATIVE_Y, 0,
+
+		GL_RGBA, bm.getWidth(), abs(bm.getHeight()), 0, GL_RGBA, GL_UNSIGNED_BYTE, bm.getBits());
+
+	bm.load("models\\cube\\fd.png", GL_RGBA); glTexImage2D(GL_TEXTURE_CUBE_MAP_POSITIVE_Z, 0,
+
+		GL_RGBA, bm.getWidth(), abs(bm.getHeight()), 0, GL_RGBA, GL_UNSIGNED_BYTE, bm.getBits());
+
+	bm.load("models\\cube\\bk.png", GL_RGBA); glTexImage2D(GL_TEXTURE_CUBE_MAP_NEGATIVE_Z, 0,
+
+		GL_RGBA, bm.getWidth(), abs(bm.getHeight()), 0, GL_RGBA, GL_UNSIGNED_BYTE, bm.getBits());
 
 	// Initialise the View Matrix (initial position of the camera)
 	matrixView = rotate(mat4(1), radians(12.f), vec3(1, 0, 0));
@@ -224,9 +271,20 @@ void renderScene(mat4& matrixView, float time, float deltaTime)
 {
 
 	mat4 m;
+	
+
+
+	glActiveTexture(GL_TEXTURE1);
+	glBindTexture(GL_TEXTURE_CUBE_MAP, idTexCube);
+	program.sendUniform("textureCubeMap", 1);
+
+	glActiveTexture(GL_TEXTURE0);
+
+
+
 
 	//light
-	//program.sendUniform("lightAmbient.color", vec3(0.1, 0.1, 0.1));
+	program.sendUniform("lightAmbient.color", vec3(0.1, 0.1, 0.1));
 
 	program.sendUniform("materialAmbient", vec3(1.0, 1.0, 1.0));
 
@@ -366,8 +424,9 @@ void renderScene(mat4& matrixView, float time, float deltaTime)
 
 	program.sendUniform("tex", false); // turn off texture so it isn't applied to every object under
 
-
 	
+
+
 	program.sendUniform("materialAmbient", vec3(0.0f, 0.0f, 0.9f));
 	program.sendUniform("materialDiffuse", vec3(0.0f, 0.0f, 0.9f));
 	program.sendUniform("materialSpecular", vec3(0.0f, 0.0f, 0.9f));
@@ -550,8 +609,6 @@ void renderScene(mat4& matrixView, float time, float deltaTime)
 
 	
 
-	
-	
 	
 
 }

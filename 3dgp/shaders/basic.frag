@@ -27,6 +27,13 @@ uniform vec3 materialSpecular;
 uniform float shininess;
 
 
+in vec3 texCoordCubeMap;
+
+uniform samplerCube textureCubeMap;
+
+uniform float reflectionPower;
+
+
 // View Matrix
 
 uniform mat4 matrixView;
@@ -75,8 +82,13 @@ void main(void)
 
 
 outColor = color;
+
 outColor += PointLight(lightPoint1);
 outColor += PointLight(lightPoint2);
+
 if (tex)
     outColor *= texture(texture0, texCoord0);
+  
+    outColor = mix(outColor * texture(texture0, texCoord0.st),texture(textureCubeMap, texCoordCubeMap), reflectionPower);
+
 }

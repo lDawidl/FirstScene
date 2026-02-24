@@ -4,7 +4,7 @@
 uniform mat4 matrixProjection; 
 uniform mat4 matrixView;
 uniform mat4 matrixModelView; 
-
+out vec3 texCoordCubeMap;
 // Materials
 uniform vec3 material;
 
@@ -27,6 +27,8 @@ out vec3 normal;
 
 in vec2 aTexCoord;
 out vec2 texCoord0;
+
+
 
 
 // Light declarations
@@ -107,6 +109,6 @@ color += AmbientLight(lightAmbient);
 color += vec4(materialAmbient * emissive, 1.0);
 color += DirectionalLight(lightDir);
 
-
+texCoordCubeMap = -inverse(mat3(matrixView)) * reflect(position.xyz, normal);
 
 }
