@@ -107,7 +107,7 @@ bool init()
 	glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_WRAP_R, GL_CLAMP_TO_EDGE);
 
 
-	
+
 	//blank
 	glGenTextures(1, &idTexNone);
 
@@ -220,29 +220,7 @@ bool init()
 	if (!chicken.load("models\\chicken.obj")) return false;
 	if (!vase.load("models\\vase.obj")) return false;
 	if (!lamp .load("models\\lamp.obj")) return false;
-	bm.load("models\\cube\\lt.png", GL_RGBA); glTexImage2D(GL_TEXTURE_CUBE_MAP_POSITIVE_X, 0,
 
-		GL_RGBA, bm.getWidth(), abs(bm.getHeight()), 0, GL_RGBA, GL_UNSIGNED_BYTE, bm.getBits());
-
-	bm.load("models\\cube\\rt.png", GL_RGBA); glTexImage2D(GL_TEXTURE_CUBE_MAP_NEGATIVE_X, 0,
-
-		GL_RGBA, bm.getWidth(), abs(bm.getHeight()), 0, GL_RGBA, GL_UNSIGNED_BYTE, bm.getBits());
-
-	bm.load("models\\cube\\dn.png", GL_RGBA); glTexImage2D(GL_TEXTURE_CUBE_MAP_POSITIVE_Y, 0,
-
-		GL_RGBA, bm.getWidth(), abs(bm.getHeight()), 0, GL_RGBA, GL_UNSIGNED_BYTE, bm.getBits());
-
-	bm.load("models\\cube\\up.png", GL_RGBA); glTexImage2D(GL_TEXTURE_CUBE_MAP_NEGATIVE_Y, 0,
-
-		GL_RGBA, bm.getWidth(), abs(bm.getHeight()), 0, GL_RGBA, GL_UNSIGNED_BYTE, bm.getBits());
-
-	bm.load("models\\cube\\fd.png", GL_RGBA); glTexImage2D(GL_TEXTURE_CUBE_MAP_POSITIVE_Z, 0,
-
-		GL_RGBA, bm.getWidth(), abs(bm.getHeight()), 0, GL_RGBA, GL_UNSIGNED_BYTE, bm.getBits());
-
-	bm.load("models\\cube\\bk.png", GL_RGBA); glTexImage2D(GL_TEXTURE_CUBE_MAP_NEGATIVE_Z, 0,
-
-		GL_RGBA, bm.getWidth(), abs(bm.getHeight()), 0, GL_RGBA, GL_UNSIGNED_BYTE, bm.getBits());
 
 	// Initialise the View Matrix (initial position of the camera)
 	matrixView = rotate(mat4(1), radians(12.f), vec3(1, 0, 0));
@@ -267,22 +245,31 @@ bool init()
 	return true;
 }
 
+void renderVase(mat4 matrixView, float time, float deltaTime)
+{
+	mat4 m;
+
+	//glActiveTexture(GL_TEXTURE1);
+
+	program.sendUniform("reflectionPower", 1.0);
+	m = matrixView;
+	m = translate(m, vec3(-10.0f, 6, 0.0f));
+	m = rotate(m, radians(180.f), vec3(0.0f, 1.0f, 0.0f));
+	m = scale(m, vec3(0.2f, 0.2f, 0.2f));
+
+
+	vase.render(m);
+
+
+
+}
+
 void renderScene(mat4& matrixView, float time, float deltaTime)
 {
 
 	mat4 m;
-	
-
-
-	glActiveTexture(GL_TEXTURE1);
-	glBindTexture(GL_TEXTURE_CUBE_MAP, idTexCube);
 	program.sendUniform("textureCubeMap", 1);
-
-	glActiveTexture(GL_TEXTURE0);
-
-
-
-
+	program.sendUniform("reflectionPower", 0.0);
 	//light
 	program.sendUniform("lightAmbient.color", vec3(0.1, 0.1, 0.1));
 
@@ -431,15 +418,11 @@ void renderScene(mat4& matrixView, float time, float deltaTime)
 	program.sendUniform("materialDiffuse", vec3(0.0f, 0.0f, 0.9f));
 	program.sendUniform("materialSpecular", vec3(0.0f, 0.0f, 0.9f));
 	//vase
+	renderVase(matrixView, time, deltaTime);
+	
+	glActiveTexture(GL_TEXTURE0);
 
-	m = matrixView;
-	m = translate(m, vec3(-10.0f, 6, 0.0f));
-	m = rotate(m, radians(180.f), vec3(0.0f, 1.0f, 0.0f));
-	m = scale(m, vec3(0.2f, 0.2f, 0.2f));
-
-
-	vase.render(m);
-
+	program.sendUniform("reflectionPower", 0.0);
 	
 
 	//upsidedown pyramid
@@ -455,9 +438,12 @@ void renderScene(mat4& matrixView, float time, float deltaTime)
 	GLuint attribVertex = program.getAttribLocation("aVertex");
 
 	GLuint attribNormal = program.getAttribLocation("aNormal");
-	m = translate(m, vec3(13, 1, 0));  //make an origin point near the pyramid
+
+	m = matrixView;
+	m = translate(m, vec3(-12.5, 5.9, 0));  //make an origin point near the pyramid
+	m = scale(m, vec3(0.2, 0.2, 0.2));  
 	m = rotate(m, 1.5f * time, vec3(0, 1, 0)); // rotate
-	m = translate(m, vec3(-13, -1, 0)); 
+	m = translate(m, vec3(-13, 0, 0)); 
 	// return it back to origin, you do this to eliminate the pyramid from spinning around the point 13,1,0 and instead spin in place,
 	// origin * (-origin) * rotation = rotation, only 
 	
@@ -510,7 +496,7 @@ void renderScene(mat4& matrixView, float time, float deltaTime)
 	//chicken
 
 	m = matrixView;
-	m = translate(m, vec3(-12.5f, 8.6, 0.1f));
+	m = translate(m, vec3(-12.5f, 8.5, 0.1f));
 	m = rotate(m, radians(100.f), vec3(0.0f, 1.0f, 0.0f));
 	m = rotate(m, 1.5f * time, vec3(0, 1, 0));
 	m = scale(m, vec3(0.04f, 0.04f, 0.04f));
@@ -613,6 +599,102 @@ void renderScene(mat4& matrixView, float time, float deltaTime)
 
 }
 
+
+void prepareCubeMap(float x, float y, float z, float time, float deltaTime)
+
+{
+
+	// Store the current viewport in a safe place
+
+	GLint viewport[4];
+
+	glGetIntegerv(GL_VIEWPORT, viewport);
+
+	int w = viewport[2];
+
+	int h = viewport[3];
+
+
+	// setup the viewport to 256x256, 90 degrees FoV (Field of View)
+
+	glViewport(0, 0, 256, 256);
+
+	program.sendUniform("matrixProjection", perspective(radians(90.f), 1.0f, 0.02f, 1000.0f));
+
+
+	// render environment 6 times
+
+	program.sendUniform("reflectionPower", 0.0);
+
+	for (int i = 0; i < 6; ++i)
+
+	{
+
+		// clear background
+
+		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+
+
+		// setup the camera
+
+		const GLfloat ROTATION[6][6] =
+
+		{ // at up
+
+		{ 1.0, 0.0, 0.0, 0.0, -1.0, 0.0 }, // pos x
+
+		{ -1.0, 0.0, 0.0, 0.0, -1.0, 0.0 }, // neg x
+
+		{ 0.0, 1.0, 0.0, 0.0, 0.0, 1.0 }, // pos y
+
+		{ 0.0, -1.0, 0.0, 0.0, 0.0, -1.0 }, // neg y
+
+		{ 0.0, 0.0, 1.0, 0.0, -1.0, 0.0 }, // poz z
+
+		{ 0.0, 0.0, -1.0, 0.0, -1.0, 0.0 } // neg z
+
+		};
+
+		mat4 matrixView2 = lookAt(
+
+			vec3(x, y, z),
+
+			vec3(x + ROTATION[i][0], y + ROTATION[i][1], z + ROTATION[i][2]),
+
+			vec3(ROTATION[i][3], ROTATION[i][4], ROTATION[i][5]));
+
+
+		// send the View Matrix
+
+		program.sendUniform("matrixView", matrixView);
+
+
+		// render scene objects - all but the reflective one
+
+		glActiveTexture(GL_TEXTURE0);
+
+		renderScene(matrixView2, time, deltaTime);
+
+
+		// send the image to the cube texture
+
+		glActiveTexture(GL_TEXTURE1);
+
+		glBindTexture(GL_TEXTURE_CUBE_MAP, idTexCube);
+
+		glCopyTexImage2D(GL_TEXTURE_CUBE_MAP_POSITIVE_X + i, 0, GL_RGB8, 0, 0, 256, 256, 0);
+
+	}
+
+	// restore the matrixView, viewport and projection
+
+	void onReshape(int w, int h);
+
+	onReshape(w, h);
+
+}
+
+
 void onRender()
 {
 	// these variables control time & animation
@@ -620,7 +702,7 @@ void onRender()
 	float time = glutGet(GLUT_ELAPSED_TIME) * 0.001f;	// time since start in seconds
 	float deltaTime = time - prev;						// time since last frame
 	prev = time;										// framerate is 1/deltaTime
-
+	prepareCubeMap(-10.0f, 6, 0.0f, time, deltaTime);
 	// clear screen and buffers
 	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
