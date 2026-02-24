@@ -75,9 +75,7 @@ float _fov = 60.f;		// field of view (zoom)
 bool init()
 {
 	
-	// Send the texture info to the shaders
-
-	program.sendUniform("texture0", 0);
+	
 	
 	// Initialise Shaders
 	C3dglShader vertexShader;
@@ -105,6 +103,21 @@ bool init()
 	glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
 
 	glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_WRAP_R, GL_CLAMP_TO_EDGE);
+	for (int i = 0; i < 6; ++i)
+	{
+		glTexImage2D(
+			GL_TEXTURE_CUBE_MAP_POSITIVE_X + i,
+			0,
+			GL_RGB8,
+			256,
+			256,
+			0,
+			GL_RGB,
+			GL_UNSIGNED_BYTE,
+			nullptr
+		);
+	}
+	glActiveTexture(GL_TEXTURE0);
 
 
 
@@ -171,8 +184,13 @@ bool init()
 	if (!program.attach(fragmentShader)) return false;
 
 	if (!program.link()) return false;
+	
 
 	if (!program.use(true)) return false;
+
+
+	program.sendUniform("texture0", 0);        
+	program.sendUniform("textureCubeMap", 1);  
 
 	// rendering states
 	glEnable(GL_DEPTH_TEST);	// depth test is necessary for most 3D scenes
@@ -249,9 +267,12 @@ void renderVase(mat4 matrixView, float time, float deltaTime)
 {
 	mat4 m;
 
-	//glActiveTexture(GL_TEXTURE1);
+	glActiveTexture(GL_TEXTURE1);
 
-	program.sendUniform("reflectionPower", 1.0);
+	program.sendUniform("reflectionPower", 0.5f);
+	glActiveTexture(GL_TEXTURE0);
+	glBindTexture(GL_TEXTURE_2D, idTexNone);
+
 	m = matrixView;
 	m = translate(m, vec3(-10.0f, 6, 0.0f));
 	m = rotate(m, radians(180.f), vec3(0.0f, 1.0f, 0.0f));
@@ -259,7 +280,8 @@ void renderVase(mat4 matrixView, float time, float deltaTime)
 
 
 	vase.render(m);
-
+	glActiveTexture(GL_TEXTURE0);
+	program.sendUniform("reflectionPower", 0.0);
 
 
 }
@@ -268,13 +290,9 @@ void renderScene(mat4& matrixView, float time, float deltaTime)
 {
 
 	mat4 m;
-	glActiveTexture(GL_TEXTURE1);
-	glBindTexture(GL_TEXTURE_CUBE_MAP, idTexCube);
-	program.sendUniform("textureCubeMap", 1);
 	glActiveTexture(GL_TEXTURE0);
-
 	program.sendUniform("reflectionPower", 0.0);
-	
+
 	//light
 	program.sendUniform("lightAmbient.color", vec3(0.1, 0.1, 0.1));
 
@@ -337,7 +355,7 @@ void renderScene(mat4& matrixView, float time, float deltaTime)
 
 	//chair 1
 	
-
+	
 	m = matrixView;
 	m = translate(m, vec3(-10.0f, 0, 0.0f));
 	m = rotate(m, radians(180.f), vec3(0.0f, 1.0f, 0.0f));
@@ -414,20 +432,20 @@ void renderScene(mat4& matrixView, float time, float deltaTime)
 	
 	table.render(2, m);
 
-	program.sendUniform("tex", false); // turn off texture so it isn't applied to every object under
+	program.sendUniform("tex", false); 
 
 	
-
 
 	program.sendUniform("materialAmbient", vec3(0.0f, 0.0f, 0.9f));
 	program.sendUniform("materialDiffuse", vec3(0.0f, 0.0f, 0.9f));
 	program.sendUniform("materialSpecular", vec3(0.0f, 0.0f, 0.9f));
+
+	
+
 	//vase
 	renderVase(matrixView, time, deltaTime);
 	
-	glActiveTexture(GL_TEXTURE0);
 
-	program.sendUniform("reflectionPower", 0.0);
 	
 
 	//upsidedown pyramid
@@ -671,7 +689,7 @@ void prepareCubeMap(float x, float y, float z, float time, float deltaTime)
 
 		// send the View Matrix
 
-		program.sendUniform("matrixView", matrixView);
+		program.sendUniform("matrixView", matrixView2);
 
 
 		// render scene objects - all but the reflective one
