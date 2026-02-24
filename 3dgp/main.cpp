@@ -268,8 +268,13 @@ void renderScene(mat4& matrixView, float time, float deltaTime)
 {
 
 	mat4 m;
+	glActiveTexture(GL_TEXTURE1);
+	glBindTexture(GL_TEXTURE_CUBE_MAP, idTexCube);
 	program.sendUniform("textureCubeMap", 1);
+	glActiveTexture(GL_TEXTURE0);
+
 	program.sendUniform("reflectionPower", 0.0);
+	
 	//light
 	program.sendUniform("lightAmbient.color", vec3(0.1, 0.1, 0.1));
 
