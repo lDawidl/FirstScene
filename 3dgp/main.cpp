@@ -103,20 +103,9 @@ bool init()
 	glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
 
 	glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_WRAP_R, GL_CLAMP_TO_EDGE);
+
 	for (int i = 0; i < 6; ++i)
-	{
-		glTexImage2D(
-			GL_TEXTURE_CUBE_MAP_POSITIVE_X + i,
-			0,
-			GL_RGB8,
-			256,
-			256,
-			0,
-			GL_RGB,
-			GL_UNSIGNED_BYTE,
-			nullptr
-		);
-	}
+		glTexImage2D(GL_TEXTURE_CUBE_MAP_POSITIVE_X + i, 0, GL_RGB8, 256, 256, 0, GL_RGB, GL_UNSIGNED_BYTE, nullptr);
 	glActiveTexture(GL_TEXTURE0);
 
 
@@ -265,31 +254,29 @@ bool init()
 
 void renderVase(mat4 matrixView, float time, float deltaTime)
 {
-	mat4 m;
-
-	glActiveTexture(GL_TEXTURE1);
-
-	program.sendUniform("reflectionPower", 0.5f);
-	glActiveTexture(GL_TEXTURE0);
-	glBindTexture(GL_TEXTURE_2D, idTexNone);
-
-	m = matrixView;
+	mat4 m = matrixView;
 	m = translate(m, vec3(-10.0f, 6, 0.0f));
 	m = rotate(m, radians(180.f), vec3(0.0f, 1.0f, 0.0f));
-	m = scale(m, vec3(0.2f, 0.2f, 0.2f));
+	m = scale(m, vec3(0.2f));
 
+	program.sendUniform("reflectionPower", 0.6f);
+	program.sendUniform("tex", true);               
+
+	// Bind textures
+    
+	glActiveTexture(GL_TEXTURE1);
+	glBindTexture(GL_TEXTURE_CUBE_MAP, idTexCube);
 
 	vase.render(m);
-	glActiveTexture(GL_TEXTURE0);
-	program.sendUniform("reflectionPower", 0.0);
 
-
+	program.sendUniform("reflectionPower", 0.0f); 
 }
 
 void renderScene(mat4& matrixView, float time, float deltaTime)
 {
 
 	mat4 m;
+	
 	glActiveTexture(GL_TEXTURE0);
 	program.sendUniform("reflectionPower", 0.0);
 
@@ -434,16 +421,12 @@ void renderScene(mat4& matrixView, float time, float deltaTime)
 
 	program.sendUniform("tex", false); 
 
+	program.sendUniform("tex", true);
+	glActiveTexture(GL_TEXTURE0);
+	glBindTexture(GL_TEXTURE_2D, idTexNone);
 	
 
-	program.sendUniform("materialAmbient", vec3(0.0f, 0.0f, 0.9f));
-	program.sendUniform("materialDiffuse", vec3(0.0f, 0.0f, 0.9f));
-	program.sendUniform("materialSpecular", vec3(0.0f, 0.0f, 0.9f));
 
-	
-
-	//vase
-	renderVase(matrixView, time, deltaTime);
 	
 
 	
@@ -616,7 +599,13 @@ void renderScene(mat4& matrixView, float time, float deltaTime)
 	program.sendUniform("matrixModelView", m);
 	glutSolidTeapot(2.0);
 
-	
+	program.sendUniform("materialAmbient", vec3(0.0f, 0.0f, 0.9f));
+	program.sendUniform("materialDiffuse", vec3(0.0f, 0.0f, 0.9f));
+	program.sendUniform("materialSpecular", vec3(0.0f, 0.0f, 0.9f));
+
+
+
+
 
 	
 
@@ -689,7 +678,7 @@ void prepareCubeMap(float x, float y, float z, float time, float deltaTime)
 
 		// send the View Matrix
 
-		program.sendUniform("matrixView", matrixView2);
+		program.sendUniform("matrixView", matrixView);
 
 
 		// render scene objects - all but the reflective one
@@ -740,8 +729,13 @@ void onRender()
 	
 	program.sendUniform("matrixView", matrixView);
 	
-	// render the scene objects
+
+	program.sendUniform("reflectionPower", 0.0f);
 	renderScene(matrixView, time, deltaTime);
+
+	
+	program.sendUniform("reflectionPower", 0.6f);
+	renderVase(matrixView, time, deltaTime);
 
 	// essential for double-buffering technique
 	glutSwapBuffers();

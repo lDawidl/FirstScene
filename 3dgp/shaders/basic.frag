@@ -77,25 +77,30 @@ vec4 PointLight(POINT light)
 
 
 void main(void)
-
 {
-
-
-outColor = color;
-
-outColor += PointLight(lightPoint1);
-outColor += PointLight(lightPoint2);
-
-if (reflectionPower > 0 )
-{
-    outColor = mix(outColor * texture(texture0, texCoord0.st),texture(textureCubeMap, texCoordCubeMap), reflectionPower);
-
-}
-else 
-{
-    if (tex)
-        outColor *= texture(texture0, texCoord0);
-}
-  
     
+    vec4 baseColor = color;
+
+   
+    baseColor += PointLight(lightPoint1);
+    baseColor += PointLight(lightPoint2);
+
+    // Apply textures if needed
+    if (reflectionPower > 0.0)
+    {
+       
+        vec4 texColor = vec4(1.0);
+        if(tex)
+            texColor = texture(texture0, texCoord0.st);
+        
+        baseColor = mix(baseColor * texColor, texture(textureCubeMap, texCoordCubeMap), reflectionPower);
+    }
+    else
+    {
+        if(tex)
+            baseColor *= texture(texture0, texCoord0.st);
+    }
+
+    
+    outColor = baseColor;
 }
