@@ -34,6 +34,11 @@ uniform samplerCube textureCubeMap;
 uniform float reflectionPower;
 
 
+uniform float time;
+
+uniform float speedX;
+
+uniform float speedY;
 
 
 
@@ -84,6 +89,9 @@ void main(void)
     
     vec4 baseColor = color;
 
+    float xScrollValue = speedX * time; // horizontal scroll
+    float yScrollValue = speedY * time; // vertical scroll
+    vec2 scrollOffset = vec2(xScrollValue, yScrollValue);
    
     baseColor += PointLight(lightPoint1);
     baseColor += PointLight(lightPoint2);
@@ -94,14 +102,14 @@ void main(void)
        
         vec4 texColor = vec4(1.0);
         if(tex)
-            texColor = texture(texture0, texCoord0.st);
+            texColor = texture(texture0, texCoord0 + scrollOffset);
         
         baseColor = mix(baseColor * texColor, texture(textureCubeMap, texCoordCubeMap), reflectionPower);
     }
     else
     {
         if(tex)
-            baseColor *= texture(texture0, texCoord0.st);
+            baseColor *= texture(texture0, texCoord0 + scrollOffset);
     }
 
     

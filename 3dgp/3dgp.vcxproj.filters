@@ -30,6 +30,12 @@
     <None Include="shaders\particle.vert">
       <Filter>Shader Source Files</Filter>
     </None>
+    <None Include="shaders\anim.vert">
+      <Filter>Shader Source Files</Filter>
+    </None>
+    <None Include="shaders\anim.frag">
+      <Filter>Shader Source Files</Filter>
+    </None>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="main.cpp">

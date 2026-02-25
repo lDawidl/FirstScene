@@ -1,14 +1,5 @@
 // VERTEX SHADER
 #version 330 
-// Bone Transforms
-
-#define MAX_BONES 100
-
-uniform mat4 bones[MAX_BONES];
-
-in ivec4 aBoneId; // Bone Ids
-
-in vec4 aBoneWeight; // Bone Weights
 
 uniform mat4 matrixProjection; 
 uniform mat4 matrixView;

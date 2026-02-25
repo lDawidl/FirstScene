@@ -19,6 +19,8 @@ using namespace glm;
 
 C3dglProgram program;
 C3dglProgram programP;
+C3dglProgram programA;
+
 bool liiii = true;
 bool liiii1 = true;
 unsigned vertBuff;
@@ -55,11 +57,14 @@ C3dglModel table;
 C3dglModel chicken;
 C3dglModel vase;
 C3dglModel lamp;
+C3dglModel heart;
+C3dglModel player;
 
 GLuint idTexWood;
 GLuint idTexNone;
 GLuint clo;
 GLuint fyre;
+GLuint text;
 
 GLuint idTexCube;
 
@@ -82,7 +87,8 @@ const int NPARTICLES = (int)(LIFETIME / PERIOD);
 GLuint idBufferVelocity;
 GLuint idBufferStartTime;
 
-
+float scrollSpeedX; 
+float scrollSpeedY; 
 
 
 bool init()
@@ -99,9 +105,14 @@ bool init()
 
 	C3dglShader fragmentShaderP;
 
+	C3dglShader vertexShaderA;
+
+	C3dglShader fragmentShaderA;
+
 	C3dglBitmap bm;
 	C3dglBitmap mm;
 	C3dglBitmap mb;
+	C3dglBitmap bb;
 
 
 	// load Cube Map
@@ -185,7 +196,19 @@ bool init()
 
 	if (!mb.getBits()) return false;
 
+	//textile
+	bb.load("models/textile.png", GL_RGBA);
+	glActiveTexture(GL_TEXTURE0);
 
+	glGenTextures(1, &text);
+
+	glBindTexture(GL_TEXTURE_2D, text);
+
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+
+	glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, bb.getWidth(), bb.getHeight(), 0, GL_RGBA, GL_UNSIGNED_BYTE, bb.getBits());
+
+	if (!bb.getBits()) return false;
 
 	//basic vertex
 	if (!vertexShader.create(GL_VERTEX_SHADER)) return false;
@@ -201,6 +224,13 @@ bool init()
 
 	if (!vertexShaderP.compile()) return false;
 
+	//animation vertex
+	if (!vertexShaderA.create(GL_VERTEX_SHADER)) return false;
+
+	if (!vertexShaderA.loadFromFile("shaders/anim.vert")) return false;
+
+	if (!vertexShaderA.compile()) return false;
+
 	//basic fragment
 	if (!fragmentShader.create(GL_FRAGMENT_SHADER)) return false;
 
@@ -214,6 +244,13 @@ bool init()
 	if (!fragmentShaderP.loadFromFile("shaders/particle.frag")) return false;
 
 	if (!fragmentShaderP.compile()) return false;
+
+	//animation fragment
+	if (!fragmentShaderA.create(GL_FRAGMENT_SHADER)) return false;
+
+	if (!fragmentShaderA.loadFromFile("shaders/anim.frag")) return false;
+
+	if (!fragmentShaderA.compile()) return false;
 
 
 	//basic use
@@ -240,8 +277,22 @@ bool init()
 
 	if (!programP.use(true)) return false;
 
+	//animation use
+	if (!programA.create()) return false;
+
+	if (!programA.attach(vertexShaderA)) return false;
+
+	if (!programA.attach(fragmentShaderA)) return false;
+
+
+	if (!programA.link()) return false;
+
+
+	if (!programA.use(true)) return false;
+
 
 	program.sendUniform("texture0", 0); 
+	programA.sendUniform("texture0", 0);
 	programP.sendUniform("texture0", 0);
 	program.sendUniform("textureCubeMap", 1);
 
@@ -294,12 +345,18 @@ bool init()
 	if (!chicken.load("models\\chicken.obj")) return false;
 	if (!vase.load("models\\vase.obj")) return false;
 	if (!lamp .load("models\\lamp.obj")) return false;
+	if (!heart.load("models\\heart.obj")) return false;
+	if (!player.load("models\\Rumba Dancing.fbx")) return false;
+	
+	player.loadAnimations();
 
 	programP.sendUniform("initialPos", vec3(-5.8f, 7.0, 0.0f));
 
 	programP.sendUniform("gravity", vec3(0.0, -0.2, 0.0));
 
 	programP.sendUniform("particleLifetime", LIFETIME);
+
+
 
 	std::vector<float> bufferVelocity;
 
@@ -491,14 +548,16 @@ void renderScene(mat4& matrixView, float time, float deltaTime)
 	m = scale(m, vec3(0.008f, 0.008f, 0.008f));
 
 	program.sendUniform("tex", true);
+
+
 	glBindTexture(GL_TEXTURE_2D, idTexWood); //turn texture on and specifiy which texture to use on object/piece
 	table.render(0, m); //renders the wood peice of the chair
 
 
-	 
+
 	glBindTexture(GL_TEXTURE_2D, clo); // specify texture once again to overwrite the wood texture above
 	table.render(1, m); //renders the cushion/pillow
-	
+
 	//chair 2
 	m = matrixView;
 	m = translate(m, vec3(-10.0f, 0, 0.0f));
@@ -563,16 +622,30 @@ void renderScene(mat4& matrixView, float time, float deltaTime)
 
 	program.sendUniform("tex", false); 
 
-	program.sendUniform("tex", true);
+	
+	
+	
+
+	//heart
+	program.sendUniform("speedX", 0.5);
+
+	program.sendUniform("speedY", 0.5);
+	program.sendUniform("tex", true); // turn texture back on 
+	glBindTexture(GL_TEXTURE_2D, text); // specify texture
+
+	m = matrixView;
+	m = translate(m, vec3(-7.3f ,6.1, 2.0f));
+	m = rotate(m, radians(180.f), vec3(0.0f, 1.0f, 0.0f));
+	m = scale(m, vec3(0.05f, 0.05f, 0.05f));
+
+
+	heart.render(m);
+	program.sendUniform("tex", false);
+	program.sendUniform("speedX", 0.0);
+
+	program.sendUniform("speedY", 0.0);
 	glActiveTexture(GL_TEXTURE0);
 	glBindTexture(GL_TEXTURE_2D, idTexNone);
-	
-
-
-	
-
-	
-
 	//upsidedown pyramid
 
 
@@ -780,9 +853,22 @@ void renderScene(mat4& matrixView, float time, float deltaTime)
 
 	glDisableVertexAttribArray(aStartTime);
 
-
-
 	
+	programA.use();
+
+	// Calculate bone transforms
+	std::vector<mat4> transforms;
+	player.getAnimData(0, time, transforms);
+	programA.sendUniform("bones", &transforms[0], transforms.size());
+
+	// Set model-view
+	mat4 k = matrixView;
+	k = translate(k, vec3(5.2, 0.07, -20.0));
+	k = scale(k, vec3(0.0025f, 0.0025f, 0.0025f));
+	programA.sendUniform("matrixModelView", k);
+
+	// Render
+	player.render(k);
 
 }
 
@@ -901,13 +987,21 @@ void onRender()
 		_vel * deltaTime),		// animate camera motion (controlled by WASD keys)
 		-pitch, vec3(1, 0, 0))	// switch the pitch on
 		* matrixView;
+	
 
 	
 	program.sendUniform("matrixView", matrixView);
 	
+	program.sendUniform("speedX", scrollSpeedX);
+
+	program.sendUniform("speedY", scrollSpeedY);
+
+	program.sendUniform("time", time);
 
 	program.sendUniform("reflectionPower", 0.0f);
 	renderScene(matrixView, time, deltaTime);
+
+	
 
 
 	
