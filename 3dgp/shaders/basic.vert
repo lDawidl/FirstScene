@@ -1,5 +1,14 @@
 // VERTEX SHADER
 #version 330 
+// Bone Transforms
+
+#define MAX_BONES 100
+
+uniform mat4 bones[MAX_BONES];
+
+in ivec4 aBoneId; // Bone Ids
+
+in vec4 aBoneWeight; // Bone Weights
 
 uniform mat4 matrixProjection; 
 uniform mat4 matrixView;
@@ -29,7 +38,7 @@ in vec2 aTexCoord;
 out vec2 texCoord0;
 
 
-
+	
 
 // Light declarations
 
@@ -92,6 +101,7 @@ return color;
 void main(void)
 
 {
+
 texCoord0 = aTexCoord;
 // calculate position
 
@@ -109,6 +119,7 @@ color += AmbientLight(lightAmbient);
 color += vec4(materialAmbient * emissive, 1.0);
 color += DirectionalLight(lightDir);
 
-texCoordCubeMap = -inverse(mat3(matrixView)) * mix(reflect(position.xyz, normal.xyz), normal.xyz, 0.2);
+texCoordCubeMap = inverse(mat3(matrixView)) * mix(reflect(position.xyz, normal.xyz), normal.xyz, 0.2);
+ 
 
 }

@@ -34,6 +34,9 @@ uniform samplerCube textureCubeMap;
 uniform float reflectionPower;
 
 
+
+
+
 // View Matrix
 
 uniform mat4 matrixView;
@@ -103,4 +106,5 @@ void main(void)
 
     
     outColor = baseColor;
+ 
 }

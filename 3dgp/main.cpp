@@ -3,6 +3,8 @@
 #include <3dgl/3dgl.h>
 #include <GL/glut.h>
 #include <GL/freeglut_ext.h>
+#define _USE_MATH_DEFINES
+#include <math.h>
 
 // Include GLM core features
 #include "glm/glm.hpp"
@@ -16,6 +18,7 @@ using namespace glm;
 
 
 C3dglProgram program;
+C3dglProgram programP;
 bool liiii = true;
 bool liiii1 = true;
 unsigned vertBuff;
@@ -56,6 +59,7 @@ C3dglModel lamp;
 GLuint idTexWood;
 GLuint idTexNone;
 GLuint clo;
+GLuint fyre;
 
 GLuint idTexCube;
 
@@ -69,21 +73,35 @@ float accel = 2.f;		// camera acceleration
 vec3 _acc(0), _vel(0);	// camera acceleration and velocity vectors
 float _fov = 60.f;		// field of view (zoom)
 
+const float PERIOD = 0.00075f;
+
+const float LIFETIME = 4;
+
+const int NPARTICLES = (int)(LIFETIME / PERIOD);
+
+GLuint idBufferVelocity;
+GLuint idBufferStartTime;
+
 
 
 
 bool init()
 {
-	
-	
-	
+
+
+
 	// Initialise Shaders
 	C3dglShader vertexShader;
 
 	C3dglShader fragmentShader;
 	
+	C3dglShader vertexShaderP;
+
+	C3dglShader fragmentShaderP;
+
 	C3dglBitmap bm;
 	C3dglBitmap mm;
+	C3dglBitmap mb;
 
 
 	// load Cube Map
@@ -106,6 +124,7 @@ bool init()
 
 	for (int i = 0; i < 6; ++i)
 		glTexImage2D(GL_TEXTURE_CUBE_MAP_POSITIVE_X + i, 0, GL_RGB8, 256, 256, 0, GL_RGB, GL_UNSIGNED_BYTE, nullptr);
+	
 	glActiveTexture(GL_TEXTURE0);
 
 
@@ -152,20 +171,52 @@ bool init()
 	
 	if (!mm.getBits()) return false;
 
+	//fire
+	mb.load("models/fire.png", GL_RGBA);
+	glActiveTexture(GL_TEXTURE0);
+
+	glGenTextures(1, &fyre);
+
+	glBindTexture(GL_TEXTURE_2D, fyre);
+
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+
+	glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, mb.getWidth(), mb.getHeight(), 0, GL_RGBA, GL_UNSIGNED_BYTE, mb.getBits());
+
+	if (!mb.getBits()) return false;
+
+
+
+	//basic vertex
 	if (!vertexShader.create(GL_VERTEX_SHADER)) return false;
 
 	if (!vertexShader.loadFromFile("shaders/basic.vert")) return false;
 
 	if (!vertexShader.compile()) return false;
 
+	//particle vertex
+	if (!vertexShaderP.create(GL_VERTEX_SHADER)) return false;
 
+	if (!vertexShaderP.loadFromFile("shaders/particle.vert")) return false;
+
+	if (!vertexShaderP.compile()) return false;
+
+	//basic fragment
 	if (!fragmentShader.create(GL_FRAGMENT_SHADER)) return false;
 
 	if (!fragmentShader.loadFromFile("shaders/basic.frag")) return false;
 
 	if (!fragmentShader.compile()) return false;
 
+	//particle fragment
+	if (!fragmentShaderP.create(GL_FRAGMENT_SHADER)) return false;
 
+	if (!fragmentShaderP.loadFromFile("shaders/particle.frag")) return false;
+
+	if (!fragmentShaderP.compile()) return false;
+
+
+	//basic use
 	if (!program.create()) return false;
 
 	if (!program.attach(vertexShader)) return false;
@@ -177,15 +228,31 @@ bool init()
 
 	if (!program.use(true)) return false;
 
+	//particle use
+	if (!programP.create()) return false;
 
-	program.sendUniform("texture0", 0);        
-	program.sendUniform("textureCubeMap", 1);  
+	if (!programP.attach(vertexShaderP)) return false;
+
+	if (!programP.attach(fragmentShaderP)) return false;
+
+	if (!programP.link()) return false;
+
+
+	if (!programP.use(true)) return false;
+
+
+	program.sendUniform("texture0", 0); 
+	programP.sendUniform("texture0", 0);
+	program.sendUniform("textureCubeMap", 1);
 
 	// rendering states
 	glEnable(GL_DEPTH_TEST);	// depth test is necessary for most 3D scenes
 	glEnable(GL_NORMALIZE);		// normalization is needed by AssImp library models
 	glShadeModel(GL_SMOOTH);	// smooth shading mode is the default one; try GL_FLAT here!
 	glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);	// this is the default one; try GL_LINE!
+
+
+
 
 	// setup lighting
 
@@ -228,6 +295,80 @@ bool init()
 	if (!vase.load("models\\vase.obj")) return false;
 	if (!lamp .load("models\\lamp.obj")) return false;
 
+	programP.sendUniform("initialPos", vec3(-5.8f, 7.0, 0.0f));
+
+	programP.sendUniform("gravity", vec3(0.0, -0.2, 0.0));
+
+	programP.sendUniform("particleLifetime", LIFETIME);
+
+	std::vector<float> bufferVelocity;
+
+	std::vector<float> bufferStartTime;
+
+	float time = 0;
+
+	for (int i = 0; i < NPARTICLES; i++)
+
+	{
+
+		float theta = (float)M_PI / 6.f * (float)rand() / (float)RAND_MAX;
+
+		float phi = (float)M_PI * 2.f * (float)rand() / (float)RAND_MAX;
+
+		float x = sin(theta) * cos(phi);
+
+		float y = cos(theta);
+
+		float z = sin(theta) * sin(phi);
+
+		float v = 2 + 0.5f * (float)rand() / (float)RAND_MAX;
+
+
+		bufferVelocity.push_back(x * v);
+
+		bufferVelocity.push_back(y * v);
+
+		bufferVelocity.push_back(z * v);
+
+
+		bufferStartTime.push_back(time);
+
+		time += PERIOD;
+
+	}
+	glDepthMask(GL_FALSE); // disable depth buffer updates
+
+	glActiveTexture(GL_TEXTURE0); // choose the active texture
+
+	glBindTexture(GL_TEXTURE_2D, fyre); // bind the texture
+
+	glGenBuffers(1, &idBufferVelocity);
+
+	glBindBuffer(GL_ARRAY_BUFFER, idBufferVelocity);
+
+	glBufferData(GL_ARRAY_BUFFER, sizeof(float) * bufferVelocity.size(), &bufferVelocity[0],
+
+		GL_STATIC_DRAW);
+
+	glGenBuffers(1, &idBufferStartTime);
+
+	glBindBuffer(GL_ARRAY_BUFFER, idBufferStartTime);
+
+	glBufferData(GL_ARRAY_BUFFER, sizeof(float) * bufferStartTime.size(), &bufferStartTime[0],
+
+		GL_STATIC_DRAW);
+	glEnable(GL_BLEND);
+
+	glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+	// setup the point size
+
+	glEnable(GL_POINT_SPRITE);
+
+	glPointSize(50.0 * (1.0 - PERIOD / LIFETIME));
+	glDepthMask(GL_TRUE);
+
+
+
 
 	// Initialise the View Matrix (initial position of the camera)
 	matrixView = rotate(mat4(1), radians(12.f), vec3(1, 0, 0));
@@ -254,27 +395,28 @@ bool init()
 
 void renderVase(mat4 matrixView, float time, float deltaTime)
 {
-	mat4 m = matrixView;
-	m = translate(m, vec3(-10.0f, 6, 0.0f));
-	m = rotate(m, radians(180.f), vec3(0.0f, 1.0f, 0.0f));
-	m = scale(m, vec3(0.2f));
-
-	program.sendUniform("reflectionPower", 0.6f);
-	program.sendUniform("tex", true);               
-
-	// Bind textures
-    
+	program.use(true);
+	program.sendUniform("tex", false); 
+	program.sendUniform("materialAmbient", vec3(0.0f, 0.0f, 0.9f));
+	program.sendUniform("materialDiffuse", vec3(0.0f, 0.0f, 0.9f));
+	program.sendUniform("materialSpecular", vec3(0.0f, 0.0f, 0.9f));
 	glActiveTexture(GL_TEXTURE1);
 	glBindTexture(GL_TEXTURE_CUBE_MAP, idTexCube);
+	mat4 n = matrixView;
+	n = translate(n, vec3(-10.0f, 6, 0.0f));
+	n = rotate(n, radians(180.f), vec3(0.0f, 1.0f, 0.0f));
+	n = scale(n, vec3(0.2f));
 
-	vase.render(m);
+	program.sendUniform("reflectionPower", 0.5f);
 
-	program.sendUniform("reflectionPower", 0.0f); 
+	vase.render(n);
+	program.sendUniform("reflectionPower", 0.0f);
+	glActiveTexture(GL_TEXTURE0);
 }
 
 void renderScene(mat4& matrixView, float time, float deltaTime)
 {
-
+	program.use();
 	mat4 m;
 	
 	glActiveTexture(GL_TEXTURE0);
@@ -599,11 +741,44 @@ void renderScene(mat4& matrixView, float time, float deltaTime)
 	program.sendUniform("matrixModelView", m);
 	glutSolidTeapot(2.0);
 
-	program.sendUniform("materialAmbient", vec3(0.0f, 0.0f, 0.9f));
-	program.sendUniform("materialDiffuse", vec3(0.0f, 0.0f, 0.9f));
-	program.sendUniform("materialSpecular", vec3(0.0f, 0.0f, 0.9f));
+	
+
+	//particles
+	// RENDER THE PARTICLE SYSTEM
+
+	programP.use();
 
 
+	m = matrixView;
+
+	programP.sendUniform("matrixModelView", m);
+
+
+	// render the buffer
+	glActiveTexture(GL_TEXTURE0);
+	glBindTexture(GL_TEXTURE_2D, fyre);
+
+	GLint aVelocity = programP.getAttribLocation("aVelocity");
+
+	GLint aStartTime = programP.getAttribLocation("aStartTime");
+
+	glEnableVertexAttribArray(aVelocity); // velocity
+
+	glEnableVertexAttribArray(aStartTime); // start time
+
+	glBindBuffer(GL_ARRAY_BUFFER, idBufferVelocity);
+
+	glVertexAttribPointer(aVelocity, 3, GL_FLOAT, GL_FALSE, 0, 0);
+
+	glBindBuffer(GL_ARRAY_BUFFER, idBufferStartTime);
+
+	glVertexAttribPointer(aStartTime, 1, GL_FLOAT, GL_FALSE, 0, 0);
+
+	glDrawArrays(GL_POINTS, 0, NPARTICLES);
+
+	glDisableVertexAttribArray(aVelocity);
+
+	glDisableVertexAttribArray(aStartTime);
 
 
 
@@ -714,10 +889,10 @@ void onRender()
 	float time = glutGet(GLUT_ELAPSED_TIME) * 0.001f;	// time since start in seconds
 	float deltaTime = time - prev;						// time since last frame
 	prev = time;										// framerate is 1/deltaTime
-	prepareCubeMap(-10.0f, 6, 0.0f, time, deltaTime);
+	prepareCubeMap(-10.0f, 7, 0.0f, time, deltaTime);
 	// clear screen and buffers
 	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-
+	programP.sendUniform("time", time);
 	// setup the View Matrix (camera)
 	_vel = clamp(_vel + _acc * deltaTime, -vec3(maxspeed), vec3(maxspeed));
 	float pitch = getPitch(matrixView);
@@ -726,12 +901,14 @@ void onRender()
 		_vel * deltaTime),		// animate camera motion (controlled by WASD keys)
 		-pitch, vec3(1, 0, 0))	// switch the pitch on
 		* matrixView;
+
 	
 	program.sendUniform("matrixView", matrixView);
 	
 
 	program.sendUniform("reflectionPower", 0.0f);
 	renderScene(matrixView, time, deltaTime);
+
 
 	
 	program.sendUniform("reflectionPower", 0.6f);
@@ -749,10 +926,11 @@ void onReshape(int w, int h)
 {
 	float ratio = w * 1.0f / h;      // we hope that h is not zero
 	glViewport(0, 0, w, h);
-	mat4 matrixProjection = perspective(radians(_fov), ratio, 0.02f, 1000.f);
+	mat4 m = perspective(radians(60.f), ratio, 0.02f, 1000.f);
 
-	// Setup the Projection Matrix
-	program.sendUniform("matrixProjection", matrixProjection);
+	program.sendUniform("matrixProjection", m);
+
+	programP.sendUniform("matrixProjection", m);
 }
 
 // Handle WASDQE keys

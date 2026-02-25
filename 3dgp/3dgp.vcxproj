@@ -170,6 +170,8 @@
   <ItemGroup>
     <None Include="shaders\basic.frag" />
     <None Include="shaders\basic.vert" />
+    <None Include="shaders\particle.frag" />
+    <None Include="shaders\particle.vert" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="3dgl\3dgl.vcxproj">
