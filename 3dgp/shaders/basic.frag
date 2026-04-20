@@ -41,6 +41,12 @@ uniform float speedX;
 uniform float speedY;
 
 
+in vec4 shadowCoord;
+
+uniform sampler2DShadow shadowMap;
+
+
+
 
 // View Matrix
 
@@ -86,7 +92,7 @@ vec4 PointLight(POINT light)
 
 void main(void)
 {
-    
+
     vec4 baseColor = color;
 
     float xScrollValue = speedX * time; // horizontal scroll
@@ -95,6 +101,15 @@ void main(void)
    
     baseColor += PointLight(lightPoint1);
     baseColor += PointLight(lightPoint2);
+
+    float shadow = 1.0;
+
+    if (shadowCoord.w > 0)  
+    {
+        //shadow = 0.5 + 0.5 * textureProj(shadowMap, shadowCoord);
+    }
+
+
 
     // Apply textures if needed
     if (reflectionPower > 0.0)
@@ -111,8 +126,10 @@ void main(void)
         if(tex)
             baseColor *= texture(texture0, texCoord0 + scrollOffset);
     }
-
     
-    outColor = baseColor;
+
+
+    outColor = baseColor * shadow;
+    
  
 }

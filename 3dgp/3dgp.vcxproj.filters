@@ -36,6 +36,18 @@
     <None Include="shaders\anim.frag">
       <Filter>Shader Source Files</Filter>
     </None>
+    <None Include="shaders\terrain.frag">
+      <Filter>Shader Source Files</Filter>
+    </None>
+    <None Include="shaders\terrain.vert">
+      <Filter>Shader Source Files</Filter>
+    </None>
+    <None Include="shaders\water.frag">
+      <Filter>Shader Source Files</Filter>
+    </None>
+    <None Include="shaders\water.vert">
+      <Filter>Shader Source Files</Filter>
+    </None>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="main.cpp">

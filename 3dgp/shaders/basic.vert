@@ -3,7 +3,9 @@
 
 uniform mat4 matrixProjection; 
 uniform mat4 matrixView;
+
 uniform mat4 matrixModelView; 
+
 out vec3 texCoordCubeMap;
 // Materials
 uniform vec3 material;
@@ -28,7 +30,9 @@ out vec3 normal;
 in vec2 aTexCoord;
 out vec2 texCoord0;
 
+uniform mat4 matrixShadow;
 
+out vec4 shadowCoord;
 	
 
 // Light declarations
@@ -102,6 +106,12 @@ gl_Position = matrixProjection * position;
 
 normal = normalize(mat3(matrixModelView) * aNormal);
 
+ // calculate shadow coordinate – using the Shadow Matrix
+
+mat4 matrixModel = inverse(matrixView) * matrixModelView;
+
+shadowCoord = matrixShadow * matrixModel * vec4(aVertex, 1);
+
 // calculate light
 
 color = vec4(0, 0, 0, 1);
@@ -112,5 +122,6 @@ color += DirectionalLight(lightDir);
 
 texCoordCubeMap = inverse(mat3(matrixView)) * mix(reflect(position.xyz, normal.xyz), normal.xyz, 0.2);
  
+
 
 }

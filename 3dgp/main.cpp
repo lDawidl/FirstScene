@@ -1,4 +1,4 @@
-#include <iostream>
+ï»¿#include <iostream>
 #include <GL/glew.h>
 #include <3dgl/3dgl.h>
 #include <GL/glut.h>
@@ -20,6 +20,8 @@ using namespace glm;
 C3dglProgram program;
 C3dglProgram programP;
 C3dglProgram programA;
+C3dglProgram programW;
+C3dglProgram programT;
 
 bool liiii = true;
 bool liiii1 = true;
@@ -59,15 +61,23 @@ C3dglModel vase;
 C3dglModel lamp;
 C3dglModel heart;
 C3dglModel player;
+C3dglModel room;
+C3dglTerrain water, terrain;
 
 GLuint idTexWood;
 GLuint idTexNone;
 GLuint clo;
 GLuint fyre;
 GLuint text;
+GLuint wall;
+GLuint plate;
+GLuint block;
+GLuint sand;
+GLuint grass;
 
 GLuint idTexCube;
-
+GLuint shadowmap;
+GLuint idFBO;
 
 // The View Matrix
 mat4 matrixView;
@@ -89,7 +99,7 @@ GLuint idBufferStartTime;
 
 float scrollSpeedX; 
 float scrollSpeedY; 
-
+float waterLevel = 4.6;
 
 bool init()
 {
@@ -109,12 +119,22 @@ bool init()
 
 	C3dglShader fragmentShaderA;
 
+	C3dglShader vertexShaderW;
+
+	C3dglShader fragmentShaderW;
+
+	C3dglShader vertexShaderT;
+
+	C3dglShader fragmentShaderT;
+
 	C3dglBitmap bm;
 	C3dglBitmap mm;
 	C3dglBitmap mb;
 	C3dglBitmap bb;
-
-
+	C3dglBitmap aa;
+	C3dglBitmap cc;
+	C3dglBitmap dd;
+	
 	// load Cube Map
 
 	glActiveTexture(GL_TEXTURE1);
@@ -137,8 +157,6 @@ bool init()
 		glTexImage2D(GL_TEXTURE_CUBE_MAP_POSITIVE_X + i, 0, GL_RGB8, 256, 256, 0, GL_RGB, GL_UNSIGNED_BYTE, nullptr);
 	
 	glActiveTexture(GL_TEXTURE0);
-
-
 
 	//blank
 	glGenTextures(1, &idTexNone);
@@ -181,6 +199,51 @@ bool init()
 	glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, mm.getWidth(), mm.getHeight(), 0, GL_RGBA, GL_UNSIGNED_BYTE, mm.getBits());
 	
 	if (!mm.getBits()) return false;
+
+
+
+	//wood
+	aa.load("models/WoodWallDiffuce.jpg", GL_RGBA);
+	glActiveTexture(GL_TEXTURE0);
+
+	glGenTextures(1, &wall);
+
+	glBindTexture(GL_TEXTURE_2D, wall);
+
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+
+	glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, aa.getWidth(), aa.getHeight(), 0, GL_RGBA, GL_UNSIGNED_BYTE, aa.getBits());
+
+	if (!aa.getBits()) return false;
+
+	//wood2
+	dd.load("models/WoodDiffuce.jpg", GL_RGBA);
+	glActiveTexture(GL_TEXTURE0);
+
+	glGenTextures(1, &block);
+
+	glBindTexture(GL_TEXTURE_2D, block);
+
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+
+	glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, dd.getWidth(), dd.getHeight(), 0, GL_RGBA, GL_UNSIGNED_BYTE, dd.getBits());
+
+	if (!dd.getBits()) return false;
+
+	//cups
+	cc.load("models/CupPlateDiffuceMap.jpg", GL_RGBA);
+	glActiveTexture(GL_TEXTURE0);
+
+	glGenTextures(1, &plate);
+
+	glBindTexture(GL_TEXTURE_2D, plate);
+
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+
+	glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, cc.getWidth(), cc.getHeight(), 0, GL_RGBA, GL_UNSIGNED_BYTE, cc.getBits());
+
+	if (!cc.getBits()) return false;
+
 
 	//fire
 	mb.load("models/fire.png", GL_RGBA);
@@ -231,6 +294,20 @@ bool init()
 
 	if (!vertexShaderA.compile()) return false;
 
+	//water vertex
+	if (!vertexShaderW.create(GL_VERTEX_SHADER)) return false;
+
+	if (!vertexShaderW.loadFromFile("shaders/water.vert")) return false;
+
+	if (!vertexShaderW.compile()) return false;
+
+	//terrain vertex
+	if (!vertexShaderT.create(GL_VERTEX_SHADER)) return false;
+
+	if (!vertexShaderT.loadFromFile("shaders/terrain.vert")) return false;
+
+	if (!vertexShaderT.compile()) return false;
+
 	//basic fragment
 	if (!fragmentShader.create(GL_FRAGMENT_SHADER)) return false;
 
@@ -251,6 +328,20 @@ bool init()
 	if (!fragmentShaderA.loadFromFile("shaders/anim.frag")) return false;
 
 	if (!fragmentShaderA.compile()) return false;
+
+	//water fragment
+	if (!fragmentShaderW.create(GL_FRAGMENT_SHADER)) return false;
+
+	if (!fragmentShaderW.loadFromFile("shaders/water.frag")) return false;
+
+	if (!fragmentShaderW.compile()) return false;
+
+	//terrain fragment
+	if (!fragmentShaderT.create(GL_FRAGMENT_SHADER)) return false;
+
+	if (!fragmentShaderT.loadFromFile("shaders/terrain.frag")) return false;
+
+	if (!fragmentShaderT.compile()) return false;
 
 
 	//basic use
@@ -290,11 +381,52 @@ bool init()
 
 	if (!programA.use(true)) return false;
 
+	//water use
+	if (!programW.create()) return false;
+
+	if (!programW.attach(vertexShaderW)) return false;
+
+	if (!programW.attach(fragmentShaderW)) return false;
+
+
+	if (!programW.link()) return false;
+
+
+	if (!programW.use(true)) return false;
+
+	//terrain use
+	if (!programT.create()) return false;
+
+	if (!programT.attach(vertexShaderT)) return false;
+
+	if (!programT.attach(fragmentShaderT)) return false;
+
+
+	if (!programT.link()) return false;
+
+
+	if (!programT.use(true)) return false;
+
+
+	programT.use();
+	programT.sendUniform("textureBed", 1);
+	programT.sendUniform("textureShore", 2);
 
 	program.sendUniform("texture0", 0); 
-	programA.sendUniform("texture0", 0);
+	
 	programP.sendUniform("texture0", 0);
+
+	
 	program.sendUniform("textureCubeMap", 1);
+
+	 
+
+	glGenTextures(1, &sand);
+	glBindTexture(GL_TEXTURE_2D, sand);
+
+	// grass texture
+	glGenTextures(1, &grass);
+	glBindTexture(GL_TEXTURE_2D, grass);
 
 	// rendering states
 	glEnable(GL_DEPTH_TEST);	// depth test is necessary for most 3D scenes
@@ -302,7 +434,72 @@ bool init()
 	glShadeModel(GL_SMOOTH);	// smooth shading mode is the default one; try GL_FLAT here!
 	glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);	// this is the default one; try GL_LINE!
 
+	// Create shadow map texture
 
+	glActiveTexture(GL_TEXTURE7);
+
+	glGenTextures(1, &shadowmap);
+
+	glBindTexture(GL_TEXTURE_2D, shadowmap);
+
+
+	// Texture parameters - to get nice filtering & avoid artefact on the edges of the shadowmap
+
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+
+	glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+
+	glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_COMPARE_MODE, GL_COMPARE_REF_TO_TEXTURE);
+
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_COMPARE_FUNC, GL_LESS);
+
+
+	// This will associate the texture with the depth component in the Z-buffer
+
+	GLint viewport[4];
+
+	glGetIntegerv(GL_VIEWPORT, viewport);
+
+	int w = viewport[2], h = viewport[3];
+
+	glTexImage2D(GL_TEXTURE_2D, 0, GL_DEPTH_COMPONENT, w * 2, h * 2, 0, GL_DEPTH_COMPONENT, GL_FLOAT, 0);
+
+
+	// Send the texture info to the shaders
+
+	program.sendUniform("shadowMap", 7);
+
+
+	// revert to texture unit 0
+
+	glActiveTexture(GL_TEXTURE0);
+
+	// Create a framebuffer object (FBO)
+
+	glGenFramebuffers(1, &idFBO);
+
+	glBindFramebuffer(GL_FRAMEBUFFER_EXT, idFBO);
+
+
+	// Instruct openGL that we won't bind a color texture with the currently binded FBO
+
+	glDrawBuffer(GL_NONE);
+
+	glReadBuffer(GL_NONE);
+
+
+	// attach the texture to FBO depth attachment point
+
+	glFramebufferTexture2D(GL_FRAMEBUFFER_EXT, GL_DEPTH_ATTACHMENT_EXT, GL_TEXTURE_2D, shadowmap, 0);
+
+
+	// switch back to window-system-provided framebuffer
+
+	glBindFramebufferEXT(GL_FRAMEBUFFER_EXT, 0);
 
 
 	// setup lighting
@@ -339,6 +536,10 @@ bool init()
 
 	glBufferData(GL_ELEMENT_ARRAY_BUFFER, sizeof(indices), indices, GL_STATIC_DRAW);
 
+	glEnable(GL_BLEND);
+
+	glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+
 	// load your 3D models here!
 	if (!camera.load("models\\camera.3ds")) return false;
 	if (!table.load("models\\table.obj")) return false;
@@ -347,6 +548,9 @@ bool init()
 	if (!lamp .load("models\\lamp.obj")) return false;
 	if (!heart.load("models\\heart.obj")) return false;
 	if (!player.load("models\\Rumba Dancing.fbx")) return false;
+	if (!room.load("models\\LivingRoom.obj")) return false;
+
+
 	
 	player.loadAnimations();
 
@@ -356,6 +560,30 @@ bool init()
 
 	programP.sendUniform("particleLifetime", LIFETIME);
 
+	programT.use();
+	if (!terrain.load("models\\heightmap.png", 10)) return false;
+	programW.use();
+	if (!water.load("models\\watermap.png", 10, &programW)) return false;
+
+	programT.sendUniform("lightAmbient.color", vec3(0.1, 0.1, 0.1));
+	programT.sendUniform("lightDir.direction", vec3(1.0, 0.5, 1.0));
+	programT.sendUniform("lightDir.diffuse", vec3(1.0, 1.0, 1.0));
+	//programW.sendUniform("lightAmbient.color", vec3(1.0, 1.0, 1.0));
+
+	
+	programT.sendUniform("materialAmbient", vec3(1.0, 1.0, 1.0));
+	programW.sendUniform("materialAmbient", vec3(1.0, 1.0, 1.0));
+	programT.sendUniform("materialDiffuse", vec3(1.0, 1.0, 1.0));
+
+	// setup the water colours and level
+
+	programW.sendUniform("waterColor", vec3(0.2f, 0.22f, 0.02f));
+
+	programW.sendUniform("skyColor", vec3(0.2f, 0.6f, 1.f));
+
+	programT.sendUniform("waterColor", vec3(0.2f, 0.22f, 0.02f));
+
+	programT.sendUniform("waterLevel", waterLevel);
 
 
 	std::vector<float> bufferVelocity;
@@ -435,7 +663,7 @@ bool init()
 		vec3(0.0, 1.0, 0.0));
 
 	// setup the screen background colour
-	glClearColor(0.18f, 0.25f, 0.22f, 1.0f);   // deep grey background
+	glClearColor(0.2f, 0.6f, 1.f, 1.0f);   // blue sky colour
 
 	cout << endl;
 	cout << "Use:" << endl;
@@ -449,6 +677,20 @@ bool init()
 
 	return true;
 }
+
+
+// called before window opened or resized - to setup the Projection Matrix
+void onReshape(int w, int h)
+{
+	float ratio = w * 1.0f / h;      // we hope that h is not zero
+	glViewport(0, 0, w, h);
+	mat4 m = perspective(radians(60.f), ratio, 0.02f, 1000.f);
+
+	program.sendUniform("matrixProjection", m);
+
+	programP.sendUniform("matrixProjection", m);
+}
+
 
 void renderVase(mat4 matrixView, float time, float deltaTime)
 {
@@ -646,6 +888,29 @@ void renderScene(mat4& matrixView, float time, float deltaTime)
 	program.sendUniform("speedY", 0.0);
 	glActiveTexture(GL_TEXTURE0);
 	glBindTexture(GL_TEXTURE_2D, idTexNone);
+
+	//room
+
+	m = matrixView;
+	m = translate(m, vec3(-6.9f, 0.0f, -6.0f));
+	//m = rotate(m, radians(180.f), vec3(0.0f, 1.0f, 0.0f));
+	m = scale(m, vec3(0.05f, 0.05f, 0.05f));
+
+	program.sendUniform("tex", true); // turn texture back on 
+	glBindTexture(GL_TEXTURE_2D, wall); // specify texture
+	room.render(0,m);
+	glBindTexture(GL_TEXTURE_2D, plate);
+	room.render(4,m);
+	room.render(5, m);
+	glBindTexture(GL_TEXTURE_2D, block);
+	room.render(1, m);
+	glBindTexture(GL_TEXTURE_2D, idTexWood);
+	room.render(m);
+	program.sendUniform("tex", false); // turn texture back on 
+
+
+
+
 	//upsidedown pyramid
 
 
@@ -692,7 +957,7 @@ void renderScene(mat4& matrixView, float time, float deltaTime)
 	glVertexAttribPointer(attribNormal, 3, GL_FLOAT, GL_FALSE, 0, 0);
 
 
-	// Draw triangles – using index buffer
+	// Draw triangles â€“ using index buffer
 
 	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, indBuff);
 
@@ -870,6 +1135,126 @@ void renderScene(mat4& matrixView, float time, float deltaTime)
 	// Render
 	player.render(k);
 
+
+	// TERRAIN
+	
+	programT.use();
+
+	// bind textures HERE (THIS WAS YOUR MAIN BUG FIX)
+	glActiveTexture(GL_TEXTURE1);
+	glBindTexture(GL_TEXTURE_2D, sand);
+
+	glActiveTexture(GL_TEXTURE2);
+	glBindTexture(GL_TEXTURE_2D, grass);
+
+	terrain.render(matrixView);
+
+	// WATER
+	
+	programW.use();
+
+	mat4 g = matrixView;
+	g = translate(g, vec3(0, waterLevel, 0));
+	g = scale(g, vec3(0.5f, 1.0f, 0.5f));
+
+	programW.sendUniform("matrixModelView", g);
+
+	water.render(g);
+
+}
+
+void createShadowMap(mat4 lightTransform, float time, float deltaTime)
+
+{
+
+	glEnable(GL_CULL_FACE);
+
+	glCullFace(GL_FRONT);
+
+
+	// Store the current viewport in a safe place
+
+	GLint viewport[4];
+
+	glGetIntegerv(GL_VIEWPORT, viewport);
+
+	int w = viewport[2], h = viewport[3];
+
+
+	// setup the viewport to 2x2 the original and wide (120 degrees) FoV (Field of View)
+
+	glViewport(0, 0, w * 2, h * 2);
+
+	mat4 matrixProjection = perspective(radians(160.f), (float)w / (float)h, 0.5f, 50.0f);
+
+	program.sendUniform("matrixProjection", matrixProjection);
+
+
+	// prepare the camera
+
+	mat4 matrixView = lightTransform;
+
+
+	// send the View Matrix
+
+	program.sendUniform("matrixView", matrixView);
+
+
+	// Bind the Framebuffer
+
+	glBindFramebufferEXT(GL_FRAMEBUFFER_EXT, idFBO);
+
+	// OFF-SCREEN RENDERING FROM NOW!
+
+
+	// Clear previous frame values - depth buffer only!
+
+	glClear(GL_DEPTH_BUFFER_BIT);
+
+
+	// Disable color rendering, we only want to write to the Z-Buffer (this is to speed-up)
+
+	glColorMask(GL_FALSE, GL_FALSE, GL_FALSE, GL_FALSE);
+
+
+	// Prepare and send the Shadow Matrix - this is matrix transform every coordinate x,y,z
+
+	// x = x* 0.5 + 0.5
+
+	// y = y* 0.5 + 0.5
+
+	// z = z* 0.5 + 0.5
+
+	// Moving from unit cube [-1,1] to [0,1]
+
+	const mat4 bias = {
+
+	{ 0.5, 0.0, 0.0, 0.0 },
+
+	{ 0.0, 0.5, 0.0, 0.0 },
+
+	{ 0.0, 0.0, 0.5, 0.0 },
+
+	{ 0.5, 0.5, 0.5, 1.0 }
+
+	};
+
+	program.sendUniform("matrixShadow", bias * matrixProjection * matrixView);
+
+
+	// Render all objects in the scene
+
+	renderScene(matrixView, time, deltaTime);
+
+
+	glBindFramebufferEXT(GL_FRAMEBUFFER_EXT, 0);
+
+	glColorMask(GL_TRUE, GL_TRUE, GL_TRUE, GL_TRUE);
+
+	glDisable(GL_CULL_FACE);
+
+	onReshape(w, h);
+
 }
 
 
@@ -976,6 +1361,15 @@ void onRender()
 	float deltaTime = time - prev;						// time since last frame
 	prev = time;										// framerate is 1/deltaTime
 	prepareCubeMap(-10.0f, 7, 0.0f, time, deltaTime);
+	createShadowMap(lookAt(
+
+		vec3(-15.93, 8, -2.1f), // coordinates of the source of the light
+
+		vec3(0.0f, 8, 0.0f), // coordinates of a point within or behind the scene
+
+		vec3(0.0f, 1.0f, 0.0f)), // a reasonable "Up" vector
+
+		time, deltaTime);
 	// clear screen and buffers
 	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 	programP.sendUniform("time", time);
@@ -991,6 +1385,15 @@ void onRender()
 
 	
 	program.sendUniform("matrixView", matrixView);
+	programT.use();
+	programT.sendUniform("matrixView", matrixView);
+	programW.use();
+	programW.sendUniform("matrixView", matrixView);
+
+	
+	
+
+	
 	
 	program.sendUniform("speedX", scrollSpeedX);
 
@@ -1015,17 +1418,7 @@ void onRender()
 	glutPostRedisplay();
 }
 
-// called before window opened or resized - to setup the Projection Matrix
-void onReshape(int w, int h)
-{
-	float ratio = w * 1.0f / h;      // we hope that h is not zero
-	glViewport(0, 0, w, h);
-	mat4 m = perspective(radians(60.f), ratio, 0.02f, 1000.f);
 
-	program.sendUniform("matrixProjection", m);
-
-	programP.sendUniform("matrixProjection", m);
-}
 
 // Handle WASDQE keys
 void onKeyDown(unsigned char key, int x, int y)
@@ -1169,7 +1562,7 @@ int main(int argc, char** argv)
 	C3dglLogger::log("Version: {}", (const char*)glGetString(GL_VERSION));
 	C3dglLogger::log("");
 
-	// init light and everything – not a GLUT or callback function!
+	// init light and everything â€“ not a GLUT or callback function!
 	if (!init())
 	{
 		C3dglLogger::log("Application failed to initialise\r\n");
